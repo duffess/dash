@@ -26,8 +26,8 @@ const CampaignCard = ({ campaign }) => {
             <h3 className="text-lg font-semibold text-slate-900">{campaign.name}</h3>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
               campaign.status === 'active' 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-yellow-100 text-yellow-700'
+                ? 'bg-[#2563EB]/10 text-[#2563EB]' 
+                : 'bg-[#0F172A]/10 text-[#0F172A]'
             }`}>
               {campaign.status === 'active' ? 'Ativa' : 'Pausada'}
             </span>
@@ -48,9 +48,9 @@ const CampaignCard = ({ campaign }) => {
           <span className="text-slate-600">Progresso do orçamento</span>
           <span className="font-medium text-slate-900">{budgetPercentage.toFixed(1)}%</span>
         </div>
-        <div className="w-full bg-slate-200 rounded-full h-2">
-          <div 
-            className="bg-blue-600 h-2 rounded-full transition-all"
+          <div className="w-full bg-slate-200 rounded-full h-2">
+            <div 
+            className="bg-[#2563EB] h-2 rounded-full transition-all"
             style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
           />
         </div>
@@ -59,28 +59,28 @@ const CampaignCard = ({ campaign }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-slate-50 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-1">
-            <MousePointer className="w-4 h-4 text-blue-600" />
+            <MousePointer className="w-4 h-4 text-[#2563EB]" />
             <span className="text-xs text-slate-600">CTR</span>
           </div>
           <p className="text-lg font-semibold text-slate-900">{campaign.ctr}%</p>
         </div>
         <div className="bg-slate-50 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-1">
-            <DollarSign className="w-4 h-4 text-green-600" />
+            <DollarSign className="w-4 h-4 text-[#0F172A]" />
             <span className="text-xs text-slate-600">CPC</span>
           </div>
           <p className="text-lg font-semibold text-slate-900">R$ {campaign.cpc}</p>
         </div>
         <div className="bg-slate-50 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-1">
-            <Target className="w-4 h-4 text-purple-600" />
+            <Target className="w-4 h-4 text-[#0F172A]" />
             <span className="text-xs text-slate-600">Conversões</span>
           </div>
           <p className="text-lg font-semibold text-slate-900">{campaign.conversions}</p>
         </div>
         <div className="bg-slate-50 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-4 h-4 text-orange-600" />
+            <TrendingUp className="w-4 h-4 text-[#2563EB]" />
             <span className="text-xs text-slate-600">Cliques</span>
           </div>
           <p className="text-lg font-semibold text-slate-900">{campaign.clicks}</p>

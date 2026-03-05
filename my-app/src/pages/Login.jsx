@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,11 +46,11 @@ const Login = () => {
         <title>Login - DashFlow</title>
         <meta name="description" content="Faça login no DashFlow e acesse seus relatórios de marketing digital" />
       </Helmet>
-      <div className="min-h-screen flex">
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-12 flex-col justify-between relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl"></div>
-            <div className="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+      <div className="min-h-screen flex bg-[#F5F5F5]">
+        <div className="hidden lg:flex lg:w-1/2 bg-[#0F172A] p-12 flex-col justify-between relative overflow-hidden">
+          <div className="absolute inset-0 opacity-15">
+            <div className="absolute top-10 right-10 w-48 h-48 bg-[#2563EB] rounded-full blur-3xl"></div>
+            <div className="absolute bottom-16 left-14 w-64 h-64 bg-white rounded-full blur-3xl"></div>
           </div>
           
           <motion.div
@@ -60,15 +60,12 @@ const Login = () => {
             className="relative z-10"
           >
             <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
-                <BarChart3 className="w-7 h-7 text-blue-600" />
-              </div>
-              <span className="text-3xl font-bold text-white">DashFlow</span>
+              <span className="text-4xl font-bold text-white brand-logo tracking-[0.2em]">DASH</span>
             </div>
             <h1 className="text-4xl font-bold text-white mb-4">
               Análise inteligente para suas campanhas
             </h1>
-            <p className="text-blue-100 text-lg">
+            <p className="text-slate-200 text-lg">
               Transforme dados do Google Ads em insights automáticos e relatórios visuais prontos para seus clientes.
             </p>
           </motion.div>
@@ -79,8 +76,8 @@ const Login = () => {
             transition={{ delay: 0.3, duration: 0.6 }}
             className="relative z-10"
           >
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-              <p className="text-white/90 italic">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+              <p className="text-white/85 italic">
                 "O DashFlow economizou horas de trabalho manual. Agora geramos relatórios profissionais em minutos!"
               </p>
               <p className="text-white/70 mt-3 text-sm">— Agência Digital Pro</p>
@@ -88,7 +85,7 @@ const Login = () => {
           </motion.div>
         </div>
 
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-slate-50">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-[#F5F5F5]">
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -96,10 +93,7 @@ const Login = () => {
             className="w-full max-w-md"
           >
             <div className="lg:hidden mb-8 flex items-center justify-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-slate-900">DashFlow</span>
+              <span className="text-3xl font-bold text-[#0F172A] brand-logo tracking-[0.2em]">DASH</span>
             </div>
 
             <div className="mb-8">
@@ -118,7 +112,7 @@ const Login = () => {
                     placeholder="seu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12 bg-white border-slate-300 focus:border-blue-500"
+                    className="pl-10 h-12 bg-white border-slate-300 focus:border-[#2563EB]"
                     required
                     disabled={isLoading}
                   />
@@ -135,7 +129,7 @@ const Login = () => {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 h-12 bg-white border-slate-300 focus:border-blue-500"
+                    className="pl-10 h-12 bg-white border-slate-300 focus:border-[#2563EB]"
                     required
                     disabled={isLoading}
                   />
@@ -144,7 +138,7 @@ const Login = () => {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                className="w-full h-12 bg-[#2563EB] hover:bg-[#1E4FD1] text-white font-medium"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -164,7 +158,7 @@ const Login = () => {
             <div className="mt-6 text-center">
               <p className="text-slate-600">
                 Não tem uma conta?{' '}
-                <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+                <Link to="/register" className="text-[#2563EB] hover:text-[#1E4FD1] font-medium">
                   Cadastre-se gratuitamente
                 </Link>
               </p>

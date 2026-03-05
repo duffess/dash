@@ -10,8 +10,8 @@ const ReportCard = ({ report, onExportPDF, onExportHTML }) => {
       className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-shadow"
     >
       <div className="flex items-start gap-4 mb-4">
-        <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-          <FileText className="w-6 h-6 text-blue-600" />
+        <div className="w-12 h-12 bg-[#F5F5F5] rounded-lg flex items-center justify-center flex-shrink-0">
+          <FileText className="w-6 h-6 text-[#2563EB]" />
         </div>
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-slate-900 mb-1">{report.name}</h3>
@@ -26,7 +26,7 @@ const ReportCard = ({ report, onExportPDF, onExportHTML }) => {
             </div>
           </div>
         </div>
-        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+        <span className="px-3 py-1 bg-[#2563EB]/10 text-[#2563EB] rounded-full text-xs font-medium">
           Concluído
         </span>
       </div>

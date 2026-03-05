@@ -14,7 +14,7 @@ const PerformanceChart = () => {
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-6">
-      <h3 className="text-lg font-semibold text-slate-900 mb-4">Desempenho nos Últimos 7 Dias</h3>
+      <h3 className="text-lg font-semibold text-[#0F172A] mb-4">Desempenho nos Últimos 7 Dias</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -28,8 +28,8 @@ const PerformanceChart = () => {
               boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
             }}
           />
-          <Line type="monotone" dataKey="ctr" stroke="#3b82f6" strokeWidth={2} name="CTR (%)" />
-          <Line type="monotone" dataKey="conversions" stroke="#8b5cf6" strokeWidth={2} name="Conversões" />
+          <Line type="monotone" dataKey="ctr" stroke="#2563EB" strokeWidth={2} name="CTR (%)" />
+          <Line type="monotone" dataKey="conversions" stroke="#0F172A" strokeWidth={2} name="Conversões" />
         </LineChart>
       </ResponsiveContainer>
     </div>

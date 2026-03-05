@@ -15,6 +15,20 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const getErrorMessage = (error, fallback) => {
+    const detail = error?.response?.data?.detail;
+    if (Array.isArray(detail)) {
+      return detail.map((item) => item?.msg || 'Erro de validaÃ§Ã£o').join(' | ');
+    }
+    if (typeof detail === 'string') {
+      return detail;
+    }
+    if (detail && typeof detail === 'object') {
+      return detail.msg || fallback;
+    }
+    return fallback;
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('dashflow_token');
     if (token) {
@@ -42,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.detail || 'Email ou senha incorretos' 
+        error: getErrorMessage(error, 'Email ou senha incorretos')
       };
     }
   };
@@ -62,7 +76,7 @@ export const AuthProvider = ({ children }) => {
     console.error('Erro backend:', error.response?.data);
     return {
       success: false,
-      error: error.response?.data?.detail || 'Erro ao criar conta',
+      error: getErrorMessage(error, 'Erro ao criar conta'),
     };
   }
 };
@@ -78,7 +92,7 @@ export const AuthProvider = ({ children }) => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-[#2563EB] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-600">Carregando...</p>
         </div>
       </div>

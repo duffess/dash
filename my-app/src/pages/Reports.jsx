@@ -60,7 +60,7 @@ const Reports = () => {
               <h1 className="text-3xl font-bold text-slate-900">Relatórios</h1>
               <p className="text-slate-600 mt-1">Gere relatórios profissionais para seus clientes</p>
             </div>
-            <Button onClick={handleNewReport} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleNewReport} className="bg-[#2563EB] hover:bg-[#1E4FD1]">
               <Plus className="w-5 h-5 mr-2" />
               Novo Relatório
             </Button>

@@ -73,7 +73,7 @@ const Settings = () => {
                   <Button 
                     onClick={handleConnectGoogleAds}
                     variant={googleAdsConnected ? "outline" : "default"}
-                    className={!googleAdsConnected ? "bg-blue-600 hover:bg-blue-700" : ""}
+                    className={!googleAdsConnected ? "bg-[#2563EB] hover:bg-[#1E4FD1]" : ""}
                   >
                     <Link2 className="w-4 h-4 mr-2" />
                     {googleAdsConnected ? 'Reconectar' : 'Conectar'}
@@ -83,7 +83,7 @@ const Settings = () => {
             </div>
 
             <div className="border-t border-slate-200 pt-6">
-              <Button onClick={handleSaveSettings} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleSaveSettings} className="bg-[#2563EB] hover:bg-[#1E4FD1]">
                 <Save className="w-4 h-4 mr-2" />
                 Salvar Alterações
               </Button>

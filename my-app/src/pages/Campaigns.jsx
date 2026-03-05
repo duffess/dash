@@ -78,7 +78,7 @@ const Campaigns = () => {
       <Layout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-12 h-12 border-4 border-[#2563EB] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-slate-600">Carregando campanhas...</p>
           </div>
         </div>
@@ -99,7 +99,7 @@ const Campaigns = () => {
               <h1 className="text-3xl font-bold text-slate-900">Campanhas</h1>
               <p className="text-slate-600 mt-1">Gerencie e monitore suas campanhas ativas</p>
             </div>
-            <Button onClick={handleNewCampaign} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleNewCampaign} className="bg-[#2563EB] hover:bg-[#1E4FD1]">
               <Plus className="w-5 h-5 mr-2" />
               Nova Campanha
             </Button>
@@ -111,7 +111,7 @@ const Campaigns = () => {
               placeholder="Buscar campanhas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white border-slate-300"
+              className="pl-10 bg-white border-slate-300 focus:border-[#2563EB]"
             />
           </div>
 
