@@ -208,7 +208,7 @@ else:
             st.markdown("#### 📋 Gerenciar Clientes")
             st.markdown(f"Você tem **{num_clients} cliente(s)** cadastrado(s)")
             if st.button("Ver clientes", key="go_clients"):
-                st.switch_page("pages/1_👥_Clientes.py")
+                st.switch_page("pages/clients.py")
     
     with col2:
         with st.container():

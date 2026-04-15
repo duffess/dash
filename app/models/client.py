@@ -15,6 +15,9 @@ class Client(Base):
 
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     user = relationship("User", back_populates="clients")
+    integrations = relationship("ClientIntegration", back_populates="client", cascade="all, delete-orphan")
+    campaigns = relationship("Campaign", back_populates="client", cascade="all, delete-orphan")
+    insights = relationship("Insight", back_populates="client", cascade="all, delete-orphan")
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800&family=Unbounded:wght@200;300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,45 +15,87 @@
 @layer components {
   .brand-logo {
     font-family: 'Astralys', serif;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.15em;
   }
 }
 
 @layer base {
   :root {
-    --background: 0 0% 96%;
-    --foreground: 222.2 47.4% 11.2%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    /* Manual de Marca DashFlow - Tonalidades Nocturnas */
+    --background: 222 55% 10%; /* #0B1326 */
+    --foreground: 210 40% 98%;
+    
+    --card: 222 45% 12%; /* #131B2E */
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222 55% 10%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 221 83% 53%; /* #2563EB - Azul Dash */
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    
+    --secondary: 222 25% 20%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 222 25% 20%;
+    --muted-foreground: 215 20% 65%;
+    
+    --accent: 221 83% 53%;
+    --accent-foreground: 210 40% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+
+    --border: 222 30% 18%;
+    --input: 222 30% 18%;
+    --ring: 221 83% 53%;
+    
+    --radius: 0px; /* SHARP EDGES - A regra de ouro do Precision Architect */
+  }
+
+  .dark {
+    --background: 222 55% 10%;
+    --foreground: 210 40% 98%;
+    /* Dark mode é o padrão no DashFlow Premium */
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    border-radius: 0 !important; /* Força bordas secas em TUDO */
   }
+
   body {
     @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Unbounded', sans-serif;
+    letter-spacing: -0.03em;
+  }
+
+  /* Utilitários de Vidro (Glassmorphism) */
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border-white/10;
+  }
+  
+  /* Gradiente Dash Signature */
+  .grad-dash {
+    background: linear-gradient(135deg, #2563EB 0%, #1E4FD1 100%);
+  }
+
+  /* No-Line Rule: Sombras sutilíssimas em vez de bordas */
+  .architect-card {
+    @apply bg-[#131B2E] border-none shadow-2xl shadow-black/20;
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), background-color 0.2s;
+  }
+
+  .architect-card:hover {
+    @apply bg-[#171F33];
   }
 }

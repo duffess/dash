@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, client, google_oauth
+from app.routers import auth, campaign, client, google_oauth, meta_oauth, integration
 
 app = FastAPI(
     title="DashFlow API",
@@ -35,18 +35,24 @@ def health_check():
     return {"status": "healthy"}
 
 # Importar routers
-from app.routers import auth, client
+from app.routers import auth, campaign, client, integration
 
 # Incluir routers
 app.include_router(auth.router, prefix="/auth", tags=["Autenticação"])
 app.include_router(client.router, prefix="/clients", tags=["Clientes"])
+app.include_router(campaign.router, prefix="/campaigns", tags=["Campanhas (Mock)"])
+app.include_router(integration.router, prefix="/integrations", tags=["Integracoes"])
+from app.routers import insight
+app.include_router(insight.router, prefix="/insights", tags=["Insights IA"])
 
 # Criar tabelas no banco
 from app.database import engine, Base
-from app.models import user, client as client_model
+from app.models import campaign as campaign_model, client as client_model, integration as integration_model, user
 
 @app.on_event("startup")
 def startup_event():
-    Base.metadata.create_all(bind=engine)
+    # Migrations will be handled by Alembic (production ready)
+    pass
 
 app.include_router(google_oauth.router, prefix="/auth/google", tags=["Google OAuth"])
+app.include_router(meta_oauth.router, prefix="/auth/meta", tags=["Meta OAuth"])

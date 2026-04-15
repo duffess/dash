@@ -16,6 +16,13 @@ if 'token' not in st.session_state or st.session_state.token is None:
 # Headers de autenticação
 headers = {"Authorization": f"Bearer {st.session_state.token}"}
 
+# Helpers de navegaÃ§Ã£o
+def _set_client_query_param(client_id: str):
+    if hasattr(st, "query_params"):
+        st.query_params["client_id"] = client_id
+    else:
+        st.experimental_set_query_params(client_id=client_id)
+
 # Funções de API
 def create_client(name, email, phone, company):
     try:
@@ -126,6 +133,11 @@ with col2:
                     st.caption(f"ID: {client['id'][:8]}... | Criado em: {client['created_at'][:10]}")
                 
                 with col_actions:
+                    if st.button("🔌 Conexão", key=f"open_{client['id']}", help="Abrir página do cliente"):
+                        st.session_state.selected_client_id = client["id"]
+                        _set_client_query_param(client["id"])
+                        st.switch_page("pages/client_connection.py")
+
                     if st.button("🗑️", key=f"delete_{client['id']}", help="Deletar cliente"):
                         if delete_client(client['id']):
                             st.success("Cliente deletado!")
