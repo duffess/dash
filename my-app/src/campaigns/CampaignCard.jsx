@@ -6,7 +6,9 @@ import { useToast } from '../components/ui/use-toast';
 
 const CampaignCard = ({ campaign }) => {
   const { toast } = useToast();
-  const budgetPercentage = (campaign.spent / campaign.budget) * 100;
+  const budget = Number(campaign.budget) || 0;
+  const spend = Number(campaign.spend ?? campaign.spent) || 0;
+  const budgetPercentage = budget > 0 ? (spend / budget) * 100 : 0;
 
   const handleViewDetails = () => {
     toast({
@@ -33,9 +35,9 @@ const CampaignCard = ({ campaign }) => {
             </span>
           </div>
           <div className="flex items-center gap-4 text-sm text-slate-600">
-            <span>Orçamento: R$ {campaign.budget.toFixed(2)}</span>
+            <span>Orçamento: R$ {budget.toFixed(2)}</span>
             <span>•</span>
-            <span>Gasto: R$ {campaign.spent.toFixed(2)}</span>
+            <span>Gasto: R$ {spend.toFixed(2)}</span>
           </div>
         </div>
         <Button variant="ghost" size="icon" onClick={handleViewDetails}>

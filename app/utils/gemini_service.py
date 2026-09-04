@@ -1,4 +1,5 @@
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import json
 import logging
 from typing import List, Dict, Any
@@ -10,7 +11,8 @@ logger = logging.getLogger(__name__)
 
 class GeminiService:
     def __init__(self):
-        self.model = None
+        self.client = None
+        self.model_name = None
         self._initialized = False
 
     def _initialize(self):
@@ -21,8 +23,8 @@ class GeminiService:
         
         if settings.gemini_api_key and not self._initialized:
             try:
-                genai.configure(api_key=settings.gemini_api_key)
-                self.model = genai.GenerativeModel('models/gemini-1.5-flash')
+                self.client = genai.Client(api_key=settings.gemini_api_key)
+                self.model_name = settings.gemini_model
                 self._initialized = True
                 logger.info("Gemini Model inicializado com sucesso.")
             except Exception as e:
@@ -34,7 +36,7 @@ class GeminiService:
         """
         self._initialize()
         
-        if not self.model:
+        if not self.client:
             return [{
                 "title": "IA não configurada",
                 "message": "Configure sua chave do Gemini no .env para receber insights estratégicos reais.",
@@ -81,7 +83,13 @@ class GeminiService:
         """
 
         try:
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json"
+                ),
+            )
             raw_content = response.text.strip()
             logger.info(f"Resposta bruta do Gemini: {raw_content}")
 

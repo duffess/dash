@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any, List
 logger = logging.getLogger(__name__)
 
 class MetaAdsService:
-    API_VERSION = "v19.0"
+    API_VERSION = "v26.0"
     GRAPH_BASE_URL = f"https://graph.facebook.com/{API_VERSION}"
     AUTH_BASE_URL = f"https://www.facebook.com/{API_VERSION}"
 
@@ -18,7 +18,7 @@ class MetaAdsService:
         """
         Gera a URL para o usuário fazer o login e autorizar a aplicação.
         """
-        scopes = "ads_read,ads_management,read_insights"
+        scopes = "ads_read"
         url = (
             f"{self.AUTH_BASE_URL}/dialog/oauth?"
             f"client_id={self.app_id}&"
@@ -40,8 +40,22 @@ class MetaAdsService:
             "client_secret": self.app_secret,
             "code": code
         }
-        res = requests.get(url, params=params)
-        res.raise_for_status()
+        try:
+            res = requests.get(url, params=params, timeout=30)
+            res.raise_for_status()
+        except requests.RequestException as exc:
+            response = getattr(exc, "response", None)
+            detail = "Erro de rede ao trocar o codigo OAuth"
+            status_code = "sem resposta"
+            if response is not None:
+                status_code = response.status_code
+                try:
+                    detail = response.json().get("error", {}).get("message", detail)
+                except ValueError:
+                    detail = "A Meta recusou a troca do codigo OAuth"
+            raise RuntimeError(
+                f"Falha ao trocar o codigo OAuth da Meta ({status_code}): {detail}"
+            ) from exc
         data = res.json()
         short_lived_token = data.get("access_token")
 
@@ -55,8 +69,22 @@ class MetaAdsService:
             "client_secret": self.app_secret,
             "fb_exchange_token": short_lived_token
         }
-        long_res = requests.get(url, params=long_params)
-        long_res.raise_for_status()
+        try:
+            long_res = requests.get(url, params=long_params, timeout=30)
+            long_res.raise_for_status()
+        except requests.RequestException as exc:
+            response = getattr(exc, "response", None)
+            detail = "Erro de rede ao gerar token de longa duracao"
+            status_code = "sem resposta"
+            if response is not None:
+                status_code = response.status_code
+                try:
+                    detail = response.json().get("error", {}).get("message", detail)
+                except ValueError:
+                    detail = "A Meta recusou a geracao do token de longa duracao"
+            raise RuntimeError(
+                f"Falha ao gerar token de longa duracao da Meta ({status_code}): {detail}"
+            ) from exc
         long_data = long_res.json()
         
         return long_data.get("access_token", short_lived_token)

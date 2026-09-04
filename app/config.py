@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 10080
 
     gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
     openai_api_key: str = ""
 
     google_ads_client_id: str = ""
@@ -23,6 +24,7 @@ class Settings(BaseSettings):
 
     meta_app_id: str = ""
     meta_app_secret: str = ""
+    meta_redirect_uri: str = "http://localhost:8000/auth/meta/callback"
     token_encryption_key: str = ""
 
     # Variaveis extras do .env
