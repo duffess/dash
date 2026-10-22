@@ -2,9 +2,8 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 import requests
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -14,6 +13,7 @@ from app.models.integration import ClientIntegration
 from app.models.user import User
 from app.utils.auth import get_current_user
 from app.utils.crypto import encrypt_text
+from app.utils.oauth_state import issue_oauth_attempt, consume_oauth_attempt, finish_oauth
 
 router = APIRouter()
 settings = get_settings()
@@ -27,12 +27,11 @@ def _extract_customer_id(resource_name: str | None) -> str | None:
 
 
 def _fetch_google_account_id(refresh_token: str) -> str | None:
-    if not settings.google_ads_developer_token:
+    if not settings.google_ads_client_id or not settings.google_ads_client_secret:
         return None
 
     from app.utils.google_ads import GoogleAdsService
     service = GoogleAdsService(
-        developer_token=settings.google_ads_developer_token,
         client_id=settings.google_ads_client_id,
         client_secret=settings.google_ads_client_secret,
     )
@@ -45,39 +44,9 @@ def _fetch_google_account_id(refresh_token: str) -> str | None:
     return account_ids[0]
 
 
-def _build_state_token(user_id: str, client_id: str) -> str:
-    payload = {
-        "sub": user_id,
-        "client_id": client_id,
-        "platform": "google_ads",
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=10),
-    }
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
-
-
-def _decode_state_token(state: str) -> dict:
-    try:
-        payload = jwt.decode(state, settings.secret_key, algorithms=[settings.algorithm])
-        if payload.get("platform") != "google_ads":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="State invalido para plataforma",
-            )
-        if not payload.get("client_id") or not payload.get("sub"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="State incompleto",
-            )
-        return payload
-    except JWTError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="State invalido ou expirado",
-        ) from exc
-
-
 @router.get("/connect")
 def connect_google(
+    response: Response,
     client_id: str = Query(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -100,7 +69,7 @@ def connect_google(
             detail="Cliente não encontrado",
         )
 
-    state = _build_state_token(current_user.id, client_id)
+    state = issue_oauth_attempt(db, response, current_user.id, client_id, "google_ads", settings)
     params = {
         "client_id": settings.google_ads_client_id,
         "redirect_uri": settings.google_ads_redirect_uri,
@@ -116,21 +85,22 @@ def connect_google(
 
 @router.get("/callback")
 def google_callback(
-    code: str = Query(...),
-    state: str = Query(...),
+    request: Request,
+    code: str | None = Query(default=None),
+    state: str | None = Query(default=None),
     error: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """Recebe callback do Google OAuth e persiste tokens da integração."""
-    if error:
-        return RedirectResponse(
-            url=f"{settings.frontend_base_url}/clients?google_oauth=error&reason={error}",
+    attempt = consume_oauth_attempt(db, request, state, "google_ads", settings)
+    if error or not code:
+        return finish_oauth(RedirectResponse(
+            url=f"{settings.frontend_base_url}/clients?google_oauth=error&reason=authorization_failed",
             status_code=status.HTTP_302_FOUND,
-        )
+        ), "google_ads", settings)
 
-    state_payload = _decode_state_token(state)
-    user_id = state_payload["sub"]
-    client_id = state_payload["client_id"]
+    user_id = attempt["user_id"]
+    client_id = attempt["client_id"]
 
     client = (
         db.query(Client)
@@ -214,18 +184,18 @@ def google_callback(
 
         db.commit()
 
-        return RedirectResponse(
+        return finish_oauth(RedirectResponse(
             url=(
                 f"{settings.frontend_base_url}/clients/{client.id}"
                 f"?google_oauth=success&integration_id={integration_id}&status=pending_account_select"
             ),
             status_code=status.HTTP_302_FOUND,
-        )
+        ), "google_ads", settings)
 
     except HTTPException:
         raise
-    except Exception as exc:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro no callback do Google: {str(exc)}",
-        ) from exc
+            detail="Não foi possível concluir a conexão Google. Reconecte a conta e revise a configuração OAuth.",
+        ) from None

@@ -27,8 +27,8 @@ class GeminiService:
                 self.model_name = settings.gemini_model
                 self._initialized = True
                 logger.info("Gemini Model inicializado com sucesso.")
-            except Exception as e:
-                logger.error(f"Erro ao configurar Gemini: {str(e)}")
+            except Exception:
+                logger.error("Não foi possível configurar o Gemini.")
 
     def generate_marketing_insights(self, campaigns_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -91,7 +91,6 @@ class GeminiService:
                 ),
             )
             raw_content = response.text.strip()
-            logger.info(f"Resposta bruta do Gemini: {raw_content}")
 
             # Tentar encontrar um JSON array na resposta usando regex
             import re
@@ -106,7 +105,7 @@ class GeminiService:
             insights = json.loads(content)
             return insights
         except Exception as e:
-            logger.error(f"Erro detalhado Gemini: {str(e)}")
+            logger.error("Não foi possível concluir a análise Gemini.")
             # Se for um erro de segurança/bloqueio do Google
             if "finish_reason" in str(e) or "safety" in str(e).lower():
                 return [{

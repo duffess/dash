@@ -18,18 +18,14 @@ const Dashboard = () => {
         const { data } = await api.get('/campaigns/summary', { params: { days: 30 } });
         setMetrics({
           ctr: data.avg_ctr,
-          ctrChange: 4.2, 
           cpc: data.avg_cpc,
-          cpcChange: -1.5,
           conversions: data.total_conversions,
-          conversionsChange: 12.8,
           totalCost: data.total_spend,
-          totalCostChange: 8.4,
           impressions: data.total_impressions,
           clicks: data.total_clicks,
         });
       } catch (error) {
-        console.error('Erro ao buscar métricas:', error);
+        console.error('Não foi possível buscar as métricas.');
       } finally {
         setLoading(false);
       }
@@ -97,7 +93,7 @@ const Dashboard = () => {
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Sync Status</span>
                   <div className="flex items-center gap-2 text-white font-bold text-sm">
                      <Activity className="w-4 h-4 text-[#2563EB]" />
-                     <span>REAL-TIME DATA</span>
+                     <span>ÚLTIMA SINCRONIZAÇÃO</span>
                   </div>
                </div>
             </div>
@@ -109,7 +105,7 @@ const Dashboard = () => {
               <MetricCard
                 title="Avg Click-Through Rate"
                 value={`${metrics?.ctr || 0}%`}
-                change={metrics?.ctrChange || 0}
+                change={null}
                 icon={MousePointer}
                 color="blue"
               />
@@ -118,7 +114,7 @@ const Dashboard = () => {
               <MetricCard
                 title="Cost Per Click (Avg)"
                 value={`R$ ${metrics?.cpc?.toFixed(2) || '0.00'}`}
-                change={metrics?.cpcChange || 0}
+                change={null}
                 icon={DollarSign}
                 color="blue"
               />
@@ -127,7 +123,7 @@ const Dashboard = () => {
               <MetricCard
                 title="Total Conversions"
                 value={metrics?.conversions || 0}
-                change={metrics?.conversionsChange || 0}
+                change={null}
                 icon={Target}
                 color="blue"
               />
@@ -136,7 +132,7 @@ const Dashboard = () => {
               <MetricCard
                 title="Total Ad Spend"
                 value={`R$ ${metrics?.totalCost?.toFixed(2) || '0.00'}`}
-                change={metrics?.totalCostChange || 0}
+                change={null}
                 icon={Zap}
                 color="blue"
               />
@@ -159,11 +155,11 @@ const Dashboard = () => {
              <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
                    <div className="w-1 h-1 bg-[#2563EB]"></div>
-                   <span className="text-[9px] font-bold text-slate-700 uppercase">Latency 24ms</span>
+                   <span className="text-[9px] font-bold text-slate-700 uppercase">Dados sincronizados</span>
                 </div>
                 <div className="flex items-center gap-1">
                    <div className="w-1 h-1 bg-[#2563EB]"></div>
-                   <span className="text-[9px] font-bold text-slate-700 uppercase">API Connected</span>
+                   <span className="text-[9px] font-bold text-slate-700 uppercase">Google Ads / Meta Ads</span>
                 </div>
              </div>
           </motion.div>

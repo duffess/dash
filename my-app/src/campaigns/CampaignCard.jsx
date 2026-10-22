@@ -8,6 +8,7 @@ const CampaignCard = ({ campaign }) => {
   const { toast } = useToast();
   const budget = Number(campaign.budget) || 0;
   const spend = Number(campaign.spend ?? campaign.spent) || 0;
+  const dailyBudget = Number(campaign.daily_budget) || 0;
   const budgetPercentage = budget > 0 ? (spend / budget) * 100 : 0;
 
   const handleViewDetails = () => {
@@ -31,11 +32,12 @@ const CampaignCard = ({ campaign }) => {
                 ? 'bg-[#2563EB]/10 text-[#2563EB]' 
                 : 'bg-[#0F172A]/10 text-[#0F172A]'
             }`}>
-              {campaign.status === 'active' ? 'Ativa' : 'Pausada'}
+              {({ active: 'Ativa', paused: 'Pausada', ended: 'Encerrada', archived: 'Arquivada', deleted: 'Excluída' })[campaign.status] || 'Desconhecido'}
             </span>
           </div>
+          <p className="text-sm text-slate-500 mb-2">{campaign.client_name} · {campaign.platform === "meta_ads" ? "Meta Ads" : "Google Ads"}</p>
           <div className="flex items-center gap-4 text-sm text-slate-600">
-            <span>Orçamento: R$ {budget.toFixed(2)}</span>
+            <span>{budget > 0 ? `Orçamento total: R$ ${budget.toFixed(2)}` : dailyBudget > 0 ? `Orçamento diário: R$ ${dailyBudget.toFixed(2)}` : "Orçamento no conjunto de anúncios / indisponível"}</span>
             <span>•</span>
             <span>Gasto: R$ {spend.toFixed(2)}</span>
           </div>
@@ -45,7 +47,7 @@ const CampaignCard = ({ campaign }) => {
         </Button>
       </div>
 
-      <div className="mb-4">
+      {budget > 0 && <div className="mb-4">
         <div className="flex justify-between text-sm mb-2">
           <span className="text-slate-600">Progresso do orçamento</span>
           <span className="font-medium text-slate-900">{budgetPercentage.toFixed(1)}%</span>
@@ -56,7 +58,7 @@ const CampaignCard = ({ campaign }) => {
             style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
           />
         </div>
-      </div>
+      </div>}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-slate-50 rounded-lg p-3">

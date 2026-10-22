@@ -1,0 +1,23 @@
+[Unit]
+Description=Dash encrypted database backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/dashflow
+UMask=0077
+# Run as a dedicated operator with Docker access, not the web app identity.
+User=dashbackup
+ExecStart=/opt/dashflow/.venv/bin/python scripts/maintenance/database_backup.py --key-file /etc/dashflow/backup_key --output-dir /var/backups/dashflow --postgres-compose deploy/compose.production.yml --compose-env .env.production
+TimeoutStartSec=240
+MemoryMax=1G
+CPUQuota=50%
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/backups/dashflow
+
+[Install]
+WantedBy=multi-user.target

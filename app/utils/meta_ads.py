@@ -45,17 +45,12 @@ class MetaAdsService:
             res.raise_for_status()
         except requests.RequestException as exc:
             response = getattr(exc, "response", None)
-            detail = "Erro de rede ao trocar o codigo OAuth"
             status_code = "sem resposta"
             if response is not None:
                 status_code = response.status_code
-                try:
-                    detail = response.json().get("error", {}).get("message", detail)
-                except ValueError:
-                    detail = "A Meta recusou a troca do codigo OAuth"
             raise RuntimeError(
-                f"Falha ao trocar o codigo OAuth da Meta ({status_code}): {detail}"
-            ) from exc
+                f"Falha ao trocar o codigo OAuth da Meta ({status_code}). Revise a configuração e tente conectar novamente."
+            ) from None
         data = res.json()
         short_lived_token = data.get("access_token")
 
@@ -74,99 +69,102 @@ class MetaAdsService:
             long_res.raise_for_status()
         except requests.RequestException as exc:
             response = getattr(exc, "response", None)
-            detail = "Erro de rede ao gerar token de longa duracao"
             status_code = "sem resposta"
             if response is not None:
                 status_code = response.status_code
-                try:
-                    detail = response.json().get("error", {}).get("message", detail)
-                except ValueError:
-                    detail = "A Meta recusou a geracao do token de longa duracao"
             raise RuntimeError(
-                f"Falha ao gerar token de longa duracao da Meta ({status_code}): {detail}"
-            ) from exc
+                f"Falha ao gerar token de longa duracao da Meta ({status_code}). Tente conectar novamente."
+            ) from None
         long_data = long_res.json()
         
         return long_data.get("access_token", short_lived_token)
     
+    def _get_collection(self, path: str, access_token: str, params: dict) -> List[dict]:
+        """Read every page using cursors; never log credential-bearing URLs."""
+        url = f"{self.GRAPH_BASE_URL}/{path}"
+        params = dict(params, limit=100)
+        rows = []
+        seen = set()
+        while True:
+            try:
+                response = requests.get(
+                    url, params=params,
+                    headers={"Authorization": f"Bearer {access_token}"}, timeout=30,
+                )
+                response.raise_for_status()
+                payload = response.json()
+            except (requests.RequestException, ValueError) as exc:
+                raise RuntimeError(
+                    "Não foi possível consultar a Meta. Verifique o token, as permissões ads_read e o acesso à conta."
+                ) from exc
+            if "error" in payload or not isinstance(payload.get("data"), list):
+                raise RuntimeError("A Meta retornou uma resposta inválida.")
+            rows.extend(payload["data"])
+            paging = payload.get("paging", {})
+            if not paging.get("next"):
+                return rows
+            after = paging.get("cursors", {}).get("after")
+            if not after or after in seen:
+                raise RuntimeError("Não foi possível concluir a paginação da Meta.")
+            seen.add(after)
+            params["after"] = after
+
     def fetch_ad_accounts(self, access_token: str) -> List[str]:
-        """
-        Busca as Ad Accounts associadas àquele token.
-        """
-        url = f"{self.GRAPH_BASE_URL}/me/adaccounts"
-        params = {
-            "access_token": access_token,
-            "fields": "id,account_id,name"
-        }
-        res = requests.get(url, params=params)
-        res.raise_for_status()
-        data = res.json()
-        # Retorna lista de account_ids
-        return [acc["id"] for acc in data.get("data", [])]
+        return [row["id"] for row in self._get_collection(
+            "me/adaccounts", access_token, {"fields": "id,account_id,name"}
+        )]
 
     def fetch_campaigns(self, access_token: str, ad_account_id: str) -> List[Dict[str, Any]]:
-        """
-        Puxa todas as campanhas, formatando no padrão DashFlow.
-        (Nesta V1, se apenas a conexão for feita, o Mock preenche a UI, 
-        mas deixamos a engine real pronta abaixo).
-        """
-        # Nota: ad_account_id geralmente já vem com o prefixo 'act_', se não vier, adicionamos.
-        account_path = ad_account_id if str(ad_account_id).startswith('act_') else f"act_{ad_account_id}"
-        
-        url = f"{self.GRAPH_BASE_URL}/{account_path}/campaigns"
-        params = {
-            "access_token": access_token,
-            "fields": "id,name,status,objective,start_time,stop_time,daily_budget,lifetime_budget,insights{spend,impressions,clicks,cpc,cpm,ctr,actions}",
-            "limit": 50
-        }
-        
-        try:
-            res = requests.get(url, params=params)
-            res.raise_for_status()
-            data = res.json().get("data", [])
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Meta Graph API Erro: {e}")
-            raise Exception(f"Graph API Error: {res.text if res else str(e)}")
+        from datetime import date
 
+        account_path = ad_account_id if ad_account_id.startswith("act_") else f"act_{ad_account_id}"
+        campaigns = self._get_collection(
+            f"{account_path}/campaigns", access_token,
+            {"fields": "id,name,status,objective,start_time,stop_time,daily_budget,lifetime_budget"},
+        )
+        insights = self._get_collection(
+            f"{account_path}/insights", access_token,
+            {"fields": "campaign_id,spend,impressions,clicks,actions",
+             "level": "campaign", "date_preset": "last_30d"},
+        )
+        by_id = {row["campaign_id"]: row for row in insights}
         formatted = []
-        for camp in data:
-            # Extração de Insights (Métricas de Performance)
-            insights = camp.get("insights", {}).get("data", [])
-            insight_data = insights[0] if insights else {}
-            
-            spend = float(insight_data.get("spend", 0))
-            impressions = int(insight_data.get("impressions", 0))
-            clicks = int(insight_data.get("clicks", 0))
-            cpc_calc = float(insight_data.get("cpc", 0))
-            cpm_calc = float(insight_data.get("cpm", 0))
-            ctr_calc = float(insight_data.get("ctr", 0))
-            
-            # Conta Conversões (actions on Meta that match 'purchase' or 'lead')
-            actions = insight_data.get("actions", [])
-            conversions = 0
-            for action in actions:
-                if action.get("action_type") in ["purchase", "lead", "offsite_conversion.fb_pixel_purchase"]:
-                    conversions += int(action.get("value", 0))
-                    
-            budget = float(camp.get("daily_budget", 0) or camp.get("lifetime_budget", 0)) / 100.0
-
+        for camp in campaigns:
+            metrics = by_id.get(camp["id"], {})
+            spend = float(metrics.get("spend", 0))
+            impressions = int(metrics.get("impressions", 0))
+            clicks = int(metrics.get("clicks", 0))
+            actions = {a["action_type"]: float(a.get("value", 0)) for a in metrics.get("actions", [])}
+            # Aggregate purchases include pixel purchases; do not count both.
+            purchases = actions.get("purchase", actions.get("offsite_conversion.fb_pixel_purchase", 0))
+            conversions = purchases + actions.get("lead", 0)
+            # Missing actions are not evidence of zero results.
+            report_metrics = {k: float(metrics[k]) for k in ("spend", "impressions", "clicks")
+                              if metrics.get(k) is not None}
+            if "lead" in actions:
+                report_metrics["leads"] = actions["lead"]
+            if "purchase" in actions or "offsite_conversion.fb_pixel_purchase" in actions:
+                report_metrics["purchases"] = purchases
+            status = camp.get("status", "").lower()
+            if status not in {"active", "paused", "archived", "deleted"}:
+                status = "unknown"
             formatted.append({
-                "external_id": f"meta_{camp.get('id')}",
+                "external_id": f"meta_{camp['id']}",
                 "platform_account_id": account_path,
-                "name": camp.get("name", "Unknown Campaign"),
-                "status": camp.get("status", "UNKNOWN").lower(),
-                "objective": camp.get("objective", "UNKNOWN").lower(),
-                "budget": budget,
-                "daily_budget": budget,
+                "name": camp.get("name", camp["id"]),
+                "status": status,
+                "objective": camp.get("objective", "").lower(),
+                "budget": float(camp.get("lifetime_budget", 0)) / 100,
+                "daily_budget": float(camp.get("daily_budget", 0)) / 100,
                 "spend": spend,
+                "report_metrics": report_metrics,
                 "impressions": impressions,
                 "clicks": clicks,
                 "conversions": conversions,
-                "ctr": ctr_calc,
-                "cpc": cpc_calc,
-                "cpm": cpm_calc,
-                "start_date": camp.get("start_time", "").split("T")[0] if camp.get("start_time") else "2024-01-01",
-                "end_date": camp.get("stop_time", "").split("T")[0] if camp.get("stop_time") else None
+                "ctr": round(clicks / impressions * 100, 2) if impressions else 0,
+                "cpc": round(spend / clicks, 2) if clicks else 0,
+                "cpm": round(spend / impressions * 1000, 2) if impressions else 0,
+                "start_date": date.fromisoformat(camp["start_time"][:10]) if camp.get("start_time") else None,
+                "end_date": date.fromisoformat(camp["stop_time"][:10]) if camp.get("stop_time") else None,
             })
-            
         return formatted

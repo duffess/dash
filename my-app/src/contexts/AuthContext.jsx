@@ -63,17 +63,14 @@ export const AuthProvider = ({ children }) => {
 
  const register = async (name, email, password) => {
   const payload = { name, email, password };
-  console.log('Enviando payload:', payload);
 
   try {
-    const res = await api.post('/auth/register', payload, {
+    await api.post('/auth/register', payload, {
       headers: { 'Content-Type': 'application/json' },
     });
-    console.log('Resposta backend:', res.data);
 
     return { success: true };
   } catch (error) {
-    console.error('Erro backend:', error.response?.data);
     return {
       success: false,
       error: getErrorMessage(error, 'Erro ao criar conta'),

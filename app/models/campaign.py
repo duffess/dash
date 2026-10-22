@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -33,10 +33,11 @@ class Campaign(Base):
     spend = Column(Float, nullable=False, default=0)
     impressions = Column(Integer, nullable=False, default=0)
     clicks = Column(Integer, nullable=False, default=0)
-    conversions = Column(Integer, nullable=False, default=0)
+    conversions = Column(Float, nullable=False, default=0)
     ctr = Column(Float, nullable=False, default=0)
     cpc = Column(Float, nullable=False, default=0)
     cpm = Column(Float, nullable=False, default=0)
+    report_metrics = Column(JSON, nullable=True)
 
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)

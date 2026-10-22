@@ -23,7 +23,7 @@ const MetricCard = ({ title, value, change, icon: Icon, color }) => {
           </div>
         </div>
         
-        <div className={`flex flex-col items-end gap-1 pr-6`}>
+        {Number.isFinite(change) && <div className={`flex flex-col items-end gap-1 pr-6`}>
           <div className={`
             flex items-center gap-1 text-xs font-black px-2 py-1 
             ${isPositive ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-500'}
@@ -32,7 +32,7 @@ const MetricCard = ({ title, value, change, icon: Icon, color }) => {
             {Math.abs(change)}%
           </div>
           <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">vs Last Period</span>
-        </div>
+        </div>}
       </div>
 
       <div className="mt-8 flex items-center justify-between">

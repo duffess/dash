@@ -27,11 +27,13 @@ const ClientConnection = () => {
   const pendingStatus = searchParams.get('status');
   const queryIntegrationId = searchParams.get('integration_id');
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [selectedIntegrationId, setSelectedIntegrationId] = useState(null);
+  const openAccountSelector = (id) => { setSelectedIntegrationId(id); setShowAccountModal(true); };
   const [showBrainModal, setShowBrainModal] = useState(false);
 
   useEffect(() => {
     if (pendingStatus === 'pending_account_select' && queryIntegrationId) {
-      setShowAccountModal(true);
+      openAccountSelector(queryIntegrationId);
     }
   }, [pendingStatus, queryIntegrationId]);
 
@@ -54,6 +56,9 @@ const ClientConnection = () => {
 
   const statusMetaAdsBadge = useMemo(() => {
     const status = metaIntegration?.status;
+    if (status === 'pending_account_select' || (status === 'connected' && !metaIntegration?.account_id)) {
+      return { label: 'Selecione a Conta', className: 'bg-blue-100 text-blue-700' };
+    }
     if (status === 'connected') {
       return { label: 'Conectado', className: 'bg-emerald-100 text-emerald-700' };
     }
@@ -137,48 +142,7 @@ const ClientConnection = () => {
         variant: 'destructive',
       });
     } finally {
-      setSyncing(false);
-    }
-  };
-
-  const handleCreateMockIntegration = async (platform = 'google_ads') => {
-    setSyncing(true);
-    try {
-      const integration = platform === 'google_ads' ? googleIntegration : metaIntegration;
-      let integrationId = integration?.id;
-      
-      if (!integrationId) {
-        const { data: newInteg } = await api.post('/integrations/', {
-           client_id: clientId,
-           platform: platform,
-           access_token: 'mock_token',
-           status: 'connected'
-        });
-        integrationId = newInteg.id;
-      }
-      const { data } = await api.post(`/integrations/${integrationId}/mock`);
-      toast({ title: 'Dados de Teste Gerados', description: 'Campanhas realistas injetadas.' });
-      await Promise.all([fetchIntegrations(), fetchCampaigns()]);
-    } catch (error) {
-      toast({ title: 'Erro', description: 'Falha ao criar mock. Tente novamente.', variant: 'destructive' });
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const handleGenerateInsights = async () => {
-    if (campaigns.length === 0) {
-      toast({ title: 'Atenção', description: 'Nenhuma campanha carregada para analisar.', variant: 'destructive' });
-      return;
-    }
-    setSyncing(true);
-    try {
-      await api.post(`/insights/${clientId}/generate`);
-      toast({ title: 'Análise Pronta', description: 'O Cérebro IA terminou o diagnóstico.' });
-      setShowBrainModal(true);
-    } catch (error) {
-      toast({ title: 'Erro IA', description: error.response?.data?.detail || 'Falha ao processar.', variant: 'destructive' });
-    } finally {
+      await fetchIntegrations().catch(() => {});
       setSyncing(false);
     }
   };
@@ -202,7 +166,6 @@ const ClientConnection = () => {
     if (!metaIntegration?.id) return;
     setSyncing(true);
     try {
-      // Por enquanto o mock lida com isso, ou sync fake.
       const { data } = await api.post(`/integrations/${metaIntegration.id}/sync`);
       toast({
         title: 'Sincronizacao concluida',
@@ -297,28 +260,18 @@ const ClientConnection = () => {
                   )}
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => handleCreateMockIntegration('google_ads')} 
-                    disabled={syncing}
-                    className="text-slate-400 hover:text-slate-600 text-xs px-2"
-                    title="Preencher com dados de teste"
-                  >
-                    Gerar Teste
-                  </Button>
-                  
-                  {(!googleIntegration || googleIntegration.status === 'disconnected') && (
+                <div className="flex flex-wrap gap-2">
+                  {(
                     <Button onClick={handleConnectGoogle} className="bg-[#2563EB] hover:bg-[#1E4FD1]">
-                      Conectar
+                      {googleIntegration ? 'Reconectar' : 'Conectar'}
                     </Button>
                   )}
-                  {googleIntegration?.status === 'pending_account_select' && (
-                    <Button onClick={() => setShowAccountModal(true)} className="bg-[#2563EB] hover:bg-[#1E4FD1]">
+                  {googleIntegration && (googleIntegration.status === 'pending_account_select' || !googleIntegration.account_id) && (
+                    <Button onClick={() => openAccountSelector(googleIntegration.id)} className="bg-[#2563EB] hover:bg-[#1E4FD1]">
                       Selecionar Conta
                     </Button>
                   )}
-                  {googleIntegration?.status === 'connected' && (
+                  {['connected', 'error'].includes(googleIntegration?.status) && googleIntegration?.account_id && (
                     <Button onClick={handleSyncGoogle} variant="outline" disabled={syncing}>
                       <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
                       {syncing ? 'Sincronizando...' : 'Sincronizar'}
@@ -340,28 +293,22 @@ const ClientConnection = () => {
                       ? 'Conta conectada para este cliente'
                       : 'Conecte a conta do cliente'}
                   </p>
+                  {metaIntegration?.account_id && <p className="text-xs text-slate-500 mt-1">Conta: {metaIntegration.account_id}</p>}
                   {metaIntegration?.sync_error && (
                     <p className="text-xs text-rose-600 mt-1">Erro sync: {metaIntegration.sync_error}</p>
                   )}
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => handleCreateMockIntegration('meta_ads')} 
-                    disabled={syncing}
-                    className="text-slate-400 hover:text-slate-600 text-xs px-2"
-                    title="Preencher com dados de teste"
-                  >
-                    Gerar Teste
-                  </Button>
-                  
-                  {(!metaIntegration || metaIntegration.status === 'disconnected') && (
+                <div className="flex flex-wrap gap-2">
+                  {(
                     <Button onClick={handleConnectMeta} className="bg-[#2563EB] hover:bg-[#1E4FD1]">
-                      Conectar
+                      {metaIntegration ? 'Reconectar' : 'Conectar'}
                     </Button>
                   )}
-                  {metaIntegration?.status === 'connected' && (
+                  {metaIntegration && (metaIntegration.status === 'pending_account_select' || !metaIntegration.account_id) && (
+                    <Button onClick={() => openAccountSelector(metaIntegration.id)}>Selecionar Conta</Button>
+                  )}
+                  {['connected', 'error'].includes(metaIntegration?.status) && metaIntegration?.account_id && (
                     <Button onClick={handleSyncMeta} variant="outline" disabled={syncing}>
                       <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
                       {syncing ? 'Sincronizando...' : 'Sincronizar'}
@@ -377,25 +324,17 @@ const ClientConnection = () => {
                   <Megaphone className="w-5 h-5 text-[#2563EB]" />
                   <h2 className="text-lg font-semibold text-slate-900">Campanhas</h2>
                 </div>
-                {campaigns.length > 0 && (
+                {(
                   <div className="flex items-center">
                     <Button 
-                      onClick={handleGenerateInsights} 
+                      onClick={() => setShowBrainModal(true)}
                       disabled={syncing}
                       className="bg-slate-900 hover:bg-slate-800 text-white shadow shadow-blue-500/20"
                     >
                       <Sparkles className="w-4 h-4 mr-2 text-blue-400" />
-                      Acionar Cérebro IA
+                      Abrir Cérebro IA
                     </Button>
-                    {/* Botão de apenas visualizar se já existir */}
-                    <Button
-                      onClick={() => setShowBrainModal(true)}
-                      variant="outline"
-                      className="ml-2 text-slate-500 hover:text-slate-700"
-                      title="Ver Relatório Anterior"
-                    >
-                      Ver Relatório
-                    </Button>
+
                   </div>
                 )}
               </div>
@@ -416,7 +355,7 @@ const ClientConnection = () => {
                         <div>
                           <p className="font-medium text-slate-900">{campaign.name}</p>
                           <p className="text-xs text-slate-500">
-                            {campaign.platform} | source: {campaign.source}
+                            {campaign.platform === 'meta_ads' ? 'Meta Ads' : 'Google Ads'}
                           </p>
                         </div>
                         <span className="text-sm text-slate-700">{campaign.status}</span>
@@ -437,7 +376,7 @@ const ClientConnection = () => {
 
       <AccountSelectorModal
         isOpen={showAccountModal}
-        integrationId={queryIntegrationId || googleIntegration?.id}
+        integrationId={selectedIntegrationId}
         onClose={() => setShowAccountModal(false)}
         onSelect={() => {
           setShowAccountModal(false);
@@ -445,6 +384,7 @@ const ClientConnection = () => {
           setTimeout(() => {
             navigate(location.pathname, { replace: true });
             fetchIntegrations();
+            fetchCampaigns();
           }, 300);
         }}
       />

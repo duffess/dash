@@ -4,10 +4,10 @@ from typing import Literal, Optional
 
 
 PlatformType = Literal["google_ads", "meta_ads"]
-CampaignStatus = Literal["active", "paused", "ended"]
+CampaignStatus = Literal["active", "paused", "ended", "archived", "deleted", "unknown"]
 
 
-class CampaignMockResponse(BaseModel):
+class CampaignResponse(BaseModel):
     id: str
     client_id: Optional[str] = None
     client_name: str
@@ -21,13 +21,13 @@ class CampaignMockResponse(BaseModel):
     spend: float
     impressions: int
     clicks: int
-    conversions: int
+    conversions: float
     ctr: float
     cpc: float
     cpm: float
-    start_date: date
+    start_date: Optional[date] = None
     end_date: Optional[date] = None
-    source: Literal["synced", "mock"] = "mock"
+    source: Literal["synced", "mock"] = "synced"
     updated_at: datetime
 
 

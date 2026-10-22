@@ -1,0 +1,66 @@
+{
+    email {$ACME_EMAIL}
+    admin off
+    servers {
+        max_header_size 32KB
+        timeouts {
+            read_header 10s
+            read_body 15s
+            write 90s
+            idle 60s
+        }
+    }
+    log {
+        format filter {
+            wrap json
+            fields {
+                request delete
+                resp_headers delete
+            }
+        }
+    }
+}
+
+(safe_headers) {
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        -Server
+    }
+    log {
+        format filter {
+            wrap json
+            fields {
+                request delete
+                resp_headers delete
+            }
+        }
+    }
+}
+
+{$API_DOMAIN} {
+    import safe_headers
+    request_body {
+        max_size 256KB
+    }
+    reverse_proxy api:8000 {
+        # Strip forwarded identity supplied by callers. Only Caddy is trusted.
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto https
+        transport http {
+            dial_timeout 5s
+            response_header_timeout 75s
+        }
+    }
+}
+
+{$APP_DOMAIN} {
+    import safe_headers
+    header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://{$API_DOMAIN}; frame-src 'self' about:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    root * /srv
+    encode zstd gzip
+    try_files {path} /index.html
+    file_server
+}

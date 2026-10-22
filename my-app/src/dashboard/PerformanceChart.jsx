@@ -2,15 +2,7 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const PerformanceChart = () => {
-  const data = [
-    { date: '28 Out', ctr: 3.1, conversions: 18 },
-    { date: '29 Out', ctr: 3.3, conversions: 22 },
-    { date: '30 Out', ctr: 3.2, conversions: 19 },
-    { date: '31 Out', ctr: 3.5, conversions: 25 },
-    { date: '01 Nov', ctr: 3.4, conversions: 21 },
-    { date: '02 Nov', ctr: 3.6, conversions: 28 },
-    { date: '03 Nov', ctr: 3.8, conversions: 32 },
-  ];
+  const data = [];
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -49,7 +41,7 @@ const PerformanceChart = () => {
       </div>
       
       <div className="flex-1 w-full min-h-[300px]">
-        <ResponsiveContainer width="100%" height="100%">
+        {data.length === 0 ? <p className="text-slate-400 text-sm py-16 text-center">Histórico diário ainda indisponível. As métricas acima mostram os totais sincronizados.</p> : <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 5, right: 30, left: -20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="0" stroke="#1E293B" vertical={false} />
             <XAxis 
@@ -92,7 +84,7 @@ const PerformanceChart = () => {
               name="Conversões" 
             />
           </LineChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer>}
       </div>
       
       <div className="mt-6 flex items-center justify-end text-[9px] text-slate-600 font-bold uppercase tracking-[0.2em]">

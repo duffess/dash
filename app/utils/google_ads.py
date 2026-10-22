@@ -1,21 +1,19 @@
 import logging
-from datetime import date, timedelta
 from typing import List, Dict, Any, Optional
 from google.ads.googleads.client import GoogleAdsClient
-from google.ads.googleads.errors import GoogleAdsException
 
 logger = logging.getLogger(__name__)
 
 class GoogleAdsService:
-    def __init__(self, developer_token: str, client_id: str, client_secret: str):
-        self.developer_token = developer_token
+    API_VERSION = "v26"
+
+    def __init__(self, client_id: str, client_secret: str):
         self.client_id = client_id
         self.client_secret = client_secret
 
     def _get_client(self, refresh_token: str, customer_id: Optional[str] = None) -> GoogleAdsClient:
         """Instancia o cliente oficial do Google Ads."""
         config = {
-            "developer_token": self.developer_token,
             "client_id": self.client_id,
             "client_secret": self.client_secret,
             "refresh_token": refresh_token,
@@ -26,13 +24,13 @@ class GoogleAdsService:
             # Mas para simplificar no MVP, usamos o próprio customer_id se ele for o alvo
             config["login_customer_id"] = customer_id.replace("-", "")
             
-        return GoogleAdsClient.load_from_dict(config)
+        return GoogleAdsClient.load_from_dict(config, version=self.API_VERSION)
 
     def fetch_campaigns(self, customer_id: str, refresh_token: str, days: int = 30) -> List[Dict[str, Any]]:
         """Busca campanhas e métricas usando o SDK oficial."""
         if not customer_id:
             logger.error("customer_id não fornecido")
-            return []
+            raise ValueError("Selecione uma conta Google Ads.")
 
         customer_id = customer_id.replace("-", "")
         client = self._get_client(refresh_token, customer_id)
@@ -49,10 +47,12 @@ class GoogleAdsService:
                 metrics.impressions,
                 metrics.clicks,
                 metrics.conversions,
+                campaign_budget.amount_micros,
                 campaign.start_date,
                 campaign.end_date
             FROM campaign
             WHERE campaign.status != 'REMOVED'
+                AND segments.date DURING LAST_30_DAYS
         """
 
         try:
@@ -73,7 +73,7 @@ class GoogleAdsService:
                     "paused": "paused",
                     "removed": "archived"
                 }
-                status = status_map.get(status_raw, status_raw)
+                status = status_map.get(status_raw, "unknown")
 
                 results.append({
                     "external_id": str(campaign.id),
@@ -81,6 +81,13 @@ class GoogleAdsService:
                     "status": status,
                     "objective": str(campaign.advertising_channel_type.name).lower(),
                     "spend": round(spend, 2),
+                    "report_metrics": {"spend": round(spend, 2), "impressions": int(metrics.impressions),
+                                       "clicks": int(metrics.clicks), "conversions": float(metrics.conversions)},
+                    "budget": 0,
+                    "daily_budget": float(row.campaign_budget.amount_micros) / 1_000_000,
+                    "ctr": round(metrics.clicks / metrics.impressions * 100, 2) if metrics.impressions else 0,
+                    "cpc": round(spend / metrics.clicks, 2) if metrics.clicks else 0,
+                    "cpm": round(spend / metrics.impressions * 1000, 2) if metrics.impressions else 0,
                     "impressions": int(metrics.impressions),
                     "clicks": int(metrics.clicks),
                     "conversions": float(metrics.conversions),
@@ -90,14 +97,8 @@ class GoogleAdsService:
                 })
 
             return results
-        except GoogleAdsException as ex:
-            logger.error(f"Erro no SDK Google Ads: {ex.error.code_pb} - {ex.message}")
-            for error in ex.failure.errors:
-                logger.error(f"\tError with message: {error.message}")
-            return []
-        except Exception as e:
-            logger.error(f"Erro genérico no fetch_campaigns: {str(e)}")
-            return []
+        except Exception as exc:
+            raise RuntimeError("Não foi possível consultar campanhas do Google Ads. Verifique credenciais e acesso à conta.") from exc
 
     def list_accessible_customers(self, refresh_token: str) -> List[str]:
         """Lista IDs de clientes acessíveis para o token."""
@@ -107,6 +108,5 @@ class GoogleAdsService:
         try:
             customer_resource_names = customer_service.list_accessible_customers()
             return [name.split("/")[-1] for name in customer_resource_names.resource_names]
-        except Exception as e:
-            logger.error(f"Erro ao listar clientes acessíveis: {str(e)}")
-            return []
+        except Exception as exc:
+            raise RuntimeError("Não foi possível listar as contas Google Ads.") from exc

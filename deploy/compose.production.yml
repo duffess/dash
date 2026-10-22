@@ -1,0 +1,108 @@
+# Separate production stack. It does NOT adopt or rotate an existing database.
+name: dashflow-production
+x-api: &api
+  build:
+    context: ..
+    dockerfile: deploy/Dockerfile.api
+  env_file: ../.env.production
+  environment:
+    DATABASE_URL_FILE: /run/secrets/database_url
+    SECRET_KEY_FILE: /run/secrets/jwt_key
+    TOKEN_ENCRYPTION_KEY_FILE: /run/secrets/token_key
+    OPS_METRICS_TOKEN_FILE: /run/secrets/metrics_token
+  secrets: [database_url, jwt_key, token_key, metrics_token]
+  read_only: true
+  tmpfs: [/tmp:size=64m,noexec,nosuid,nodev]
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 128
+  mem_limit: 1g
+  cpus: 1.0
+  networks: [edge, database]
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: dashflow
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password, app_db_password]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+    networks: [database]
+    # No host port. App uses its own non-superuser role.
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d dashflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    pids_limit: 128
+    mem_limit: 1g
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  migrate:
+    <<: *api
+    command: [python, -m, alembic, upgrade, head]
+    depends_on:
+      db: {condition: service_healthy}
+    profiles: [maintenance]
+  api:
+    <<: *api
+    restart: unless-stopped
+    depends_on:
+      db: {condition: service_healthy}
+    healthcheck:
+      # Socket + database readiness, without weakening HTTP host/TLS policies.
+      test: [CMD, python, -c, "import socket; from app.database import engine; from sqlalchemy import text; socket.create_connection(('127.0.0.1',8000),timeout=3).close(); connection=engine.connect(); connection.execute(text('SELECT 1')); connection.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+      args:
+        VITE_API_BASE_URL: https://${API_DOMAIN:?Set API_DOMAIN}
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes: ["caddy_data:/data", "caddy_config:/config"]
+    networks:
+      edge:
+        ipv4_address: 172.30.0.2
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+networks:
+  edge:
+    ipam:
+      config: [{subnet: 172.30.0.0/24}]
+  database:
+    internal: true
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+secrets:
+  postgres_password: {file: ../.secrets/postgres_password}
+  app_db_password: {file: ../.secrets/app_db_password}
+  database_url: {file: ../.secrets/database_url}
+  jwt_key: {file: ../.secrets/jwt_key}
+  token_key: {file: ../.secrets/token_key}
+  metrics_token: {file: ../.secrets/metrics_token}

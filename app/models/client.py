@@ -17,6 +17,7 @@ class Client(Base):
     user = relationship("User", back_populates="clients")
     integrations = relationship("ClientIntegration", back_populates="client", cascade="all, delete-orphan")
     campaigns = relationship("Campaign", back_populates="client", cascade="all, delete-orphan")
+    reports = relationship("Report", back_populates="client", cascade="all, delete-orphan")
     insights = relationship("Insight", back_populates="client", cascade="all, delete-orphan")
 
     created_at = Column(DateTime, default=datetime.utcnow)

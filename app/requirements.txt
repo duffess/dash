@@ -1,41 +1,41 @@
 # Framework
-fastapi==0.110.0
-uvicorn[standard]==0.28.0
+fastapi==0.159.1
+uvicorn[standard]==0.54.0
 
 # Database
-sqlalchemy==2.0.28
-alembic==1.13.0
-psycopg2-binary==2.9.10
+sqlalchemy==2.0.55
+alembic==1.20.1
+psycopg2-binary==2.9.13
 
 # Auth
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
-python-multipart==0.0.9
+python-multipart==0.0.32
 
 # Validação
-pydantic==2.6.0
-pydantic-settings==2.2.0
-email-validator==2.1.0.post1
+pydantic==2.14.1
+pydantic-settings==2.16.1
+email-validator==2.3.0
 
 # APIs Externas
-google-ads==23.1.0
-facebook-business==19.0.0
+google-ads==34.0.0
+facebook-business==26.0.2
 requests==2.34.2
 
 # IA
-google-genai>=1.0.0
-openai>=1.0.0
+google-genai==2.32.0
+openai==3.36.1
 
 # Data Processing
-pandas==2.2.0
-numpy==1.26.0
+pandas==3.1.0
+numpy==2.4.6
 
 # Utils
-python-dotenv==1.0.0
-httpx==0.27.0
-cryptography==50.0.1
+python-dotenv==1.2.4
+httpx==0.28.1
+cryptography==50.0.2
 
 # Dev
-pytest==8.0.0
-black==24.2.0
+pytest==9.1.1
+black==26.10.1

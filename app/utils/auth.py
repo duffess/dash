@@ -24,7 +24,6 @@ def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password: str):
-    print("DEBUG PASSWORD:", password, type(password))
     if len(password) > 72:
         password = password[:72]
     return pwd_context.hash(password)
@@ -51,6 +50,9 @@ def get_current_user(token: str = Depends(oauth2_scheme),db: Session = Depends(g
         detail="Credenciais inválidas",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if not isinstance(token, str) or len(token) > 4096:
+        raise credentials_exception
 
     try: 
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])

@@ -15,52 +15,35 @@ const Campaigns = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState('');
+  const [error, setError] = useState('');
+  const [clientsError, setClientsError] = useState('');
+  const [retry, setRetry] = useState(0);
 
-  const fetchCampaigns = async () => {
-    try {
-      const { data } = await api.get('/campaigns/');
-      setCampaigns(data);
-    } catch (error) {
-      // Se não tiver endpoint ainda, usa mock
-      const mockCampaigns = [
-        {
-          id: '1',
-          name: 'Campanha Black Friday 2024',
-          status: 'active',
-          budget: 5000,
-          spent: 3245.80,
-          impressions: 52340,
-          clicks: 1876,
-          conversions: 143,
-          ctr: 3.58,
-          cpc: 1.73,
-        },
-        {
-          id: '2',
-          name: 'Remarketing - Carrinho Abandonado',
-          status: 'active',
-          budget: 2000,
-          spent: 1567.30,
-          impressions: 28450,
-          clicks: 892,
-          conversions: 67,
-          ctr: 3.14,
-          cpc: 1.76,
-        },
-      ];
-      setCampaigns(mockCampaigns);
-      
-      toast({
-        title: "Modo demonstração",
-        description: "Exibindo campanhas de exemplo. Conecte sua conta Google Ads para ver dados reais.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    let active = true;
+    api.get('/clients/').then(({ data }) => {
+      if (active) { setClients(data); setClientsError(''); }
+    }).catch(() => {
+      if (active) setClientsError('Não foi possível carregar os clientes. Tente novamente.');
+    });
+    return () => { active = false; };
+  }, [retry]);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    setCampaigns([]);
+    api.get('/campaigns/', { params: selectedClient ? { client_id: selectedClient } : {} })
+      .then(({ data }) => { if (active) setCampaigns(data); })
+      .catch((err) => {
+        if (active) setError(err.response?.data?.detail || 'Não foi possível carregar as campanhas.');
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [selectedClient, retry]);
 
   const filteredCampaigns = campaigns.filter(campaign =>
     campaign.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -73,24 +56,12 @@ const Campaigns = () => {
     });
   };
 
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#2563EB] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-slate-600">Carregando campanhas...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <>
       <Helmet>
         <title>Campanhas - DashFlow</title>
-        <meta name="description" content="Gerencie suas campanhas de Google Ads" />
+        <meta name="description" content="Consulte campanhas de Google Ads e Meta Ads" />
       </Helmet>
       <Layout>
         <div className="space-y-6">
@@ -104,6 +75,28 @@ const Campaigns = () => {
               Nova Campanha
             </Button>
           </div>
+
+          <div className="space-y-2">
+            <label htmlFor="campaign-client" className="text-sm font-medium text-slate-700">Cliente</label>
+            <select
+              id="campaign-client"
+              value={selectedClient}
+              onChange={(event) => setSelectedClient(event.target.value)}
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900"
+            >
+              <option value="">Todos os clientes</option>
+              {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
+            </select>
+            <p className="text-sm text-slate-500">Métricas dos últimos 30 dias, conforme a última sincronização.</p>
+          </div>
+
+          {(error || clientsError) && (
+            <div role="alert" className="rounded-lg border border-red-200 p-4 text-red-700">
+              <p>{error || clientsError}</p>
+              <Button variant="outline" onClick={() => setRetry((value) => value + 1)}>Tentar novamente</Button>
+            </div>
+          )}
+          {loading && <p role="status" className="text-slate-500">Carregando campanhas...</p>}
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -128,9 +121,9 @@ const Campaigns = () => {
             ))}
           </div>
 
-          {filteredCampaigns.length === 0 && (
+          {!loading && !error && filteredCampaigns.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-slate-500">Nenhuma campanha encontrada</p>
+              <p className="text-slate-500">{searchTerm ? "Nenhuma campanha corresponde à busca." : "Nenhuma campanha sincronizada. Conecte e sincronize a conta na página do cliente."}</p>
             </div>
           )}
         </div>

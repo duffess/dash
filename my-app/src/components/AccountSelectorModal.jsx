@@ -12,27 +12,24 @@ const AccountSelectorModal = ({ isOpen, integrationId, onClose, onSelect }) => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (isOpen && integrationId) {
-      loadAccounts();
-    }
-  }, [isOpen, integrationId]);
-
-  const loadAccounts = async () => {
+    if (!isOpen || !integrationId) return;
+    let active = true;
     setLoading(true);
-    try {
-      const { data } = await api.get(`/integrations/${integrationId}/accounts`);
-      setAccounts(data.accounts || []);
-    } catch (error) {
-      toast({
-        title: 'Erro ao buscar contas',
-        description: error.response?.data?.detail || 'Não foi possível carregar as contas do Google.',
-        variant: 'destructive',
-      });
-      onClose(); // Falhou, fecha o modal
-    } finally {
-      setLoading(false);
-    }
-  };
+    setAccounts([]);
+    api.get(`/integrations/${integrationId}/accounts`)
+      .then(({ data }) => { if (active) setAccounts(data.accounts || []); })
+      .catch((error) => {
+        if (!active) return;
+        toast({
+          title: 'Erro ao buscar contas',
+          description: error.response?.data?.detail || 'Não foi possível carregar as contas de anúncios.',
+          variant: 'destructive',
+        });
+        onClose();
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [isOpen, integrationId]);
 
   const handleSelectAccount = async (accountId) => {
     setSaving(true);
@@ -83,7 +80,7 @@ const AccountSelectorModal = ({ isOpen, integrationId, onClose, onSelect }) => {
                   Selecione a Conta
                 </h2>
                 <p className="text-slate-400 mt-1 font-['Space_Grotesk']">
-                  Encontramos as seguintes contas do Google Ads.
+                  Selecione a conta de anúncios deste cliente.
                 </p>
               </div>
               <button onClick={onClose} className="p-2 hover:bg-slate-800 transition-colors text-slate-400 hover:text-white">
@@ -94,7 +91,7 @@ const AccountSelectorModal = ({ isOpen, integrationId, onClose, onSelect }) => {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <RefreshCw className="w-8 h-8 text-[#2563EB] animate-spin mb-4" />
-                <p className="text-slate-400 animate-pulse">Buscando contas no Google Ads...</p>
+                <p className="text-slate-400 animate-pulse">Buscando contas de anúncios...</p>
               </div>
             ) : accounts.length === 0 ? (
               <div className="text-center py-8">
@@ -116,7 +113,7 @@ const AccountSelectorModal = ({ isOpen, integrationId, onClose, onSelect }) => {
                       <p className="font-['Space_Grotesk'] text-white font-medium flex items-center gap-2">
                         {accountId}
                       </p>
-                      <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider">Google Ads ID</p>
+                      <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider">ID da conta</p>
                     </div>
                     <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-[#2563EB] transform transition-transform group-hover:translate-x-1" />
                   </button>
