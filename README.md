@@ -1,5 +1,7 @@
 # DashFlow 📊
 
+> **Interface atual:** o aplicativo React/Vite está em `my-app`. Consulte [execução local e validação da repaginação](docs/glassy-redesign.md). A documentação Streamlit abaixo descreve a versão inicial.
+
 Sistema automatizado de relatórios de marketing digital com IA.
 
 ## Stack

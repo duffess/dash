@@ -9,9 +9,9 @@ export default function ReportDetail({ report, onClose, onExport, exporting }) {
   const data = report.snapshot;
   if (report.rendered_html) return (
     <section className="space-y-3" aria-label="Relatório selecionado">
-      <div className="flex flex-wrap gap-2 items-center justify-between bg-white border rounded-xl p-4">
-        <div><h2 className="font-semibold text-slate-900">{report.title}</h2>
-          <p className="text-sm text-slate-600">{data.source === 'demo' ? 'Dados fictícios · Não salvo no histórico real' : 'Retrato dos dados disponíveis na geração'}</p></div>
+      <div className="flex flex-wrap gap-2 items-center justify-between dash-panel p-4">
+        <div><h2 className="font-semibold text-slate-100">{report.title}</h2>
+          <p className="text-sm text-slate-300">{data.source === 'demo' ? 'Dados fictícios · Não salvo no histórico real' : 'Retrato dos dados disponíveis na geração'}</p></div>
         <div className="flex flex-wrap gap-2">
           <Button disabled={exporting} onClick={() => onExport(report.id, false)}>Baixar HTML</Button>
           <Button disabled={exporting} variant="outline" onClick={() => onExport(report.id, true)}>Imprimir / Salvar PDF</Button>
@@ -23,17 +23,17 @@ export default function ReportDetail({ report, onClose, onExport, exporting }) {
     </section>
   );
   return (
-    <section className="bg-white border border-slate-200 rounded-xl p-6 space-y-5" aria-label="Relatório selecionado">
+    <section className="dash-panel p-6 space-y-5" aria-label="Relatório selecionado">
       <div className="flex flex-wrap justify-between gap-3">
-        <div><h2 className="text-xl font-semibold text-slate-900">{report.title}</h2>
-          <p className="text-slate-600">{report.client_name} · {utcDate(report.created_at)}</p></div>
+        <div><h2 className="text-xl font-semibold text-slate-100">{report.title}</h2>
+          <p className="text-slate-300">{report.client_name} · {utcDate(report.created_at)}</p></div>
         <Button variant="outline" onClick={onClose}>Fechar</Button>
       </div>
-      <p className="text-sm text-slate-600">{data.period_note}</p>
-      <p className="text-sm text-slate-500">{data.currency_note}</p>
-      <h3 className="font-semibold text-slate-900">Resumo por conta</h3>
+      <p className="text-sm text-slate-300">{data.period_note}</p>
+      <p className="text-sm text-slate-400">{data.currency_note}</p>
+      <h3 className="font-semibold text-slate-100">Resumo por conta</h3>
       <div className="grid md:grid-cols-2 gap-3">
-        {data.accounts.map((account) => <div key={account.platform + account.account_id} className="border rounded-lg p-4 text-slate-700">
+        {data.accounts.map((account) => <div key={account.platform + account.account_id} className="border rounded-lg p-4 text-slate-200">
           <p className="font-semibold">{account.platform === 'meta_ads' ? 'Meta Ads' : 'Google Ads'} · {account.account_id || 'Conta não informada'}</p>
           <p>Gasto: {num(account.spend)} · Cliques: {num(account.clicks)}</p>
           <p>Impressões: {num(account.impressions)} · Conversões: {num(account.conversions)}</p>
@@ -41,7 +41,7 @@ export default function ReportDetail({ report, onClose, onExport, exporting }) {
         </div>)}
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left text-slate-700">
+        <table className="w-full text-sm text-left text-slate-200">
           <thead><tr>{['Campanha', 'Plataforma', 'Gasto', 'Cliques', 'Conversões', 'CTR', 'Sincronização'].map((title) => <th className="p-2 border-b" key={title}>{title}</th>)}</tr></thead>
           <tbody>{data.campaigns.map((campaign) => <tr key={campaign.id}>
             <td className="p-2 border-b">{campaign.name}</td><td className="p-2 border-b">{campaign.platform}</td>
@@ -51,12 +51,12 @@ export default function ReportDetail({ report, onClose, onExport, exporting }) {
           </tr>)}</tbody>
         </table>
       </div>
-      <p className="text-xs text-slate-500">{data.conversion_note}</p>
+      <p className="text-xs text-slate-400">{data.conversion_note}</p>
       {report.analysis ? <div>
-        <h3 className="font-semibold text-slate-900">Análise IA</h3>
+        <h3 className="font-semibold text-slate-100">Análise IA</h3>
         <div className="prose prose-slate max-w-none"><ReactMarkdown skipHtml components={{ img: () => null, a: ({ children }) => <span>{children}</span> }}>{report.analysis}</ReactMarkdown></div>
-        <p className="text-xs text-slate-500 mt-3">{report.ai_model} · Recomendações para revisão humana.</p>
-      </div> : <p className="text-slate-500">Relatório de métricas, sem análise IA.</p>}
+        <p className="text-xs text-slate-400 mt-3">{report.ai_model} · Recomendações para revisão humana.</p>
+      </div> : <p className="text-slate-400">Relatório de métricas, sem análise IA.</p>}
       <div className="flex flex-wrap gap-2">
         <Button disabled={exporting} onClick={() => onExport(report.id, false)}>Baixar HTML</Button>
         <Button disabled={exporting} variant="outline" onClick={() => onExport(report.id, true)}>Imprimir / Salvar PDF</Button>

@@ -27,11 +27,11 @@ export default function DemoReport({ aiConfigured, demoAIEnabled = false }) {
     catch (err) { setError(err.message || 'Falha na exportação.'); }
     finally { setExporting(false); }
   };
-  return <section className="space-y-4 border border-blue-200 bg-blue-50 rounded-xl p-5">
-    <div><h2 className="font-semibold text-blue-950 text-lg">Laboratório de relatórios + Cérebro IA</h2>
-      <p className="text-sm text-blue-900 mt-1">Teste sem conectar anúncios. Dados fictícios, isolados dos seus clientes e do histórico real.</p></div>
-    <label className="block text-sm text-slate-800">Cenário demonstrativo
-      <select className="block w-full mt-1 rounded-md border p-2 bg-white" value={scenario} disabled={busy || exporting}
+  return <section className="space-y-4 border border-blue-400/30 bg-blue-950/70 rounded-xl p-5">
+    <div><h2 className="font-semibold text-blue-100 text-lg">Laboratório de relatórios + Cérebro IA</h2>
+      <p className="text-sm text-blue-200 mt-1">Teste sem conectar anúncios. Dados fictícios, isolados dos seus clientes e do histórico real.</p></div>
+    <label className="block text-sm text-slate-200">Cenário demonstrativo
+      <select className="block w-full mt-1 rounded-md border p-2 bg-card" value={scenario} disabled={busy || exporting}
         onChange={(e) => { setScenario(e.target.value); setReport(null); }}>
         <option value="leads">Leads · CPL e comparação de períodos</option>
         <option value="sales">Vendas · receita, compras e ROAS</option>
@@ -39,13 +39,13 @@ export default function DemoReport({ aiConfigured, demoAIEnabled = false }) {
         <option value="zero">Zero resultados · sem divisão por zero</option>
       </select>
     </label>
-    <label className="flex gap-2 items-center text-sm text-slate-800">
+    <label className="flex gap-2 items-center text-sm text-slate-200">
       <input type="checkbox" checked={includeAI && canUseAI} disabled={!canUseAI || busy}
         onChange={(e) => setIncludeAI(e.target.checked)} /> Gerar análise real pela IA sobre os dados fictícios
     </label>
-    <p className="text-xs text-slate-600">{canUseAI ? 'IA habilitada pelo administrador: essa opção consome créditos e não usa a cota diária por cliente.' : 'IA paga desativada no laboratório. Teste os relatórios de métricas gratuitamente, sem chamar o modelo.'}</p>
+    <p className="text-xs text-slate-300">{canUseAI ? 'IA habilitada pelo administrador: essa opção consome créditos e não usa a cota diária por cliente.' : 'IA paga desativada no laboratório. Teste os relatórios de métricas gratuitamente, sem chamar o modelo.'}</p>
     <Button disabled={busy || exporting} onClick={generate}>{busy ? 'Preparando demonstração...' : 'Gerar demonstração'}</Button>
-    {error && <p role="alert" className="text-red-700">{error}</p>}
+    {error && <p role="alert" className="text-red-300">{error}</p>}
     {report && <ReportDetail report={report} onClose={() => setReport(null)} onExport={download} exporting={exporting} />}
   </section>;
 }

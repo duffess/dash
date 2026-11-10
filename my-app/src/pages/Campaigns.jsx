@@ -6,14 +6,12 @@ import CampaignCard from '@/campaigns/CampaignCard';
 import { Button } from '@/components/ui/button';
 import { Plus, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
 import api from '@/lib/api';
 
 const Campaigns = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState('');
@@ -49,62 +47,56 @@ const Campaigns = () => {
     campaign.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleNewCampaign = () => {
-    toast({
-      title: "🚧 Funcionalidade em desenvolvimento",
-      description: "A criação de campanhas estará disponível em breve!",
-    });
-  };
 
 
   return (
     <>
       <Helmet>
-        <title>Campanhas - DashFlow</title>
+        <title>Campanhas — DASH</title>
         <meta name="description" content="Consulte campanhas de Google Ads e Meta Ads" />
       </Helmet>
       <Layout>
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Campanhas</h1>
-              <p className="text-slate-600 mt-1">Gerencie e monitore suas campanhas ativas</p>
+              <h1 className="text-3xl font-bold text-slate-100">Campanhas</h1>
+              <p className="text-slate-300 mt-1">Gerencie e monitore suas campanhas ativas</p>
             </div>
-            <Button onClick={handleNewCampaign} className="bg-[#2563EB] hover:bg-[#1E4FD1]">
+            <Button disabled title="Crie campanhas diretamente na plataforma de anúncios" className="bg-[#2563EB] hover:bg-[#1E4FD1]">
               <Plus className="w-5 h-5 mr-2" />
-              Nova Campanha
+              Criação em breve
             </Button>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="campaign-client" className="text-sm font-medium text-slate-700">Cliente</label>
+            <label htmlFor="campaign-client" className="text-sm font-medium text-slate-200">Cliente</label>
             <select
               id="campaign-client"
               value={selectedClient}
               onChange={(event) => setSelectedClient(event.target.value)}
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900"
+              className="w-full rounded-md border border-input bg-card px-3 py-2 text-slate-100"
             >
               <option value="">Todos os clientes</option>
               {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
             </select>
-            <p className="text-sm text-slate-500">Métricas dos últimos 30 dias, conforme a última sincronização.</p>
+            <p className="text-sm text-slate-400">Métricas dos últimos 30 dias, conforme a última sincronização.</p>
           </div>
 
           {(error || clientsError) && (
-            <div role="alert" className="rounded-lg border border-red-200 p-4 text-red-700">
+            <div role="alert" className="rounded-lg border border-red-400/30 p-4 text-red-300">
               <p>{error || clientsError}</p>
               <Button variant="outline" onClick={() => setRetry((value) => value + 1)}>Tentar novamente</Button>
             </div>
           )}
-          {loading && <p role="status" className="text-slate-500">Carregando campanhas...</p>}
+          {loading && <p role="status" className="text-slate-400">Carregando campanhas...</p>}
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
-              placeholder="Buscar campanhas..."
+              aria-label="Buscar campanhas" placeholder="Buscar campanhas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white border-slate-300 focus:border-[#2563EB]"
+              className="pl-10 bg-card border-input focus:border-[#2563EB]"
             />
           </div>
 
@@ -123,7 +115,7 @@ const Campaigns = () => {
 
           {!loading && !error && filteredCampaigns.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-slate-500">{searchTerm ? "Nenhuma campanha corresponde à busca." : "Nenhuma campanha sincronizada. Conecte e sincronize a conta na página do cliente."}</p>
+              <p className="text-slate-400">{searchTerm ? "Nenhuma campanha corresponde à busca." : "Nenhuma campanha sincronizada. Conecte e sincronize a conta na página do cliente."}</p>
             </div>
           )}
         </div>

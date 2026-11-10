@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
@@ -7,6 +7,7 @@ import api from '@/lib/api';
 
 export default function AIBrainModal({ isOpen, onClose, clientId }) {
   const navigate = useNavigate();
+  const openerRef = useRef(null);
   const [insights, setInsights] = useState([]);
   const [selectedId, setSelectedId] = useState('');
   const [ai, setAI] = useState(null);
@@ -65,15 +66,15 @@ export default function AIBrainModal({ isOpen, onClose, clientId }) {
     <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
-        <Dialog.Content className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-[#0B1326] border border-slate-700 rounded-xl p-6 space-y-5 text-slate-200">
-          <div className="flex justify-between gap-3">
+        <Dialog.Content onOpenAutoFocus={() => { openerRef.current = document.activeElement; }} onCloseAutoFocus={(event) => { event.preventDefault(); openerRef.current?.focus(); }} className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto dash-dialog border border-slate-700 p-6 space-y-5 text-slate-200">
+          <div className="flex items-start justify-between gap-3">
             <div><Dialog.Title className="text-xl font-bold">Cérebro IA</Dialog.Title>
               <Dialog.Description className="text-slate-400">Análise das campanhas do cliente · janela de 30 dias de cada sincronização.</Dialog.Description></div>
             <Button variant="outline" disabled={busy} onClick={onClose}>Fechar</Button>
           </div>
           {loading ? <p role="status">Carregando dados e histórico...</p> : <>
             {error && <div role="alert" className="text-red-300">{error} <Button variant="outline" disabled={busy} onClick={() => setRetry((v) => v + 1)}>Tentar novamente</Button></div>}
-            {!ai?.configured && <p className="text-amber-300">IA não configurada. Defina OPENAI_API_KEY no backend e reinicie o servidor.</p>}
+            {!ai?.configured && <p className="text-amber-300">IA ainda não configurada. Solicite a ativação ao administrador da plataforma.</p>}
             {dataMessage && <p className="text-amber-300">{dataMessage}</p>}
             {snapshot && !hasMetrics && <p className="text-amber-300">Campanhas encontradas, mas ainda sem métricas para análise.</p>}
             {snapshot && <p className="text-xs text-slate-400">Indicadores disponíveis: {Object.values(snapshot.metric_definitions || {}).map((m) => m.label).join(', ') || 'nenhum'}. Campos ausentes não serão interpretados como zero.</p>}

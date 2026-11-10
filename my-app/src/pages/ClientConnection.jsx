@@ -40,32 +40,32 @@ const ClientConnection = () => {
   const statusMeta = useMemo(() => {
     const status = googleIntegration?.status;
     if (status === 'connected') {
-      return { label: 'Conectado', className: 'bg-emerald-100 text-emerald-700' };
+      return { label: 'Conectado', className: 'bg-emerald-950 text-emerald-200' };
     }
     if (status === 'error') {
-      return { label: 'Erro', className: 'bg-rose-100 text-rose-700' };
+      return { label: 'Erro', className: 'bg-rose-950 text-rose-200' };
     }
     if (status === 'disconnected') {
-      return { label: 'Desconectado', className: 'bg-slate-200 text-slate-700' };
+      return { label: 'Desconectado', className: 'bg-secondary text-slate-200' };
     }
     if (status === 'pending_account_select') {
-      return { label: 'Selecione a Conta', className: 'bg-[#2563EB]/20 text-[#2563EB] ring-1 ring-[#2563EB]/50' };
+      return { label: 'Selecione a Conta', className: 'bg-[#2563EB]/20 text-blue-300 ring-1 ring-[#2563EB]/50' };
     }
-    return { label: 'Nao conectado', className: 'bg-slate-100 text-slate-600' };
+    return { label: 'Não conectado', className: 'bg-secondary text-slate-300' };
   }, [googleIntegration]);
 
   const statusMetaAdsBadge = useMemo(() => {
     const status = metaIntegration?.status;
     if (status === 'pending_account_select' || (status === 'connected' && !metaIntegration?.account_id)) {
-      return { label: 'Selecione a Conta', className: 'bg-blue-100 text-blue-700' };
+      return { label: 'Selecione a Conta', className: 'bg-blue-950 text-blue-200' };
     }
     if (status === 'connected') {
-      return { label: 'Conectado', className: 'bg-emerald-100 text-emerald-700' };
+      return { label: 'Conectado', className: 'bg-emerald-950 text-emerald-200' };
     }
     if (status === 'error') {
-      return { label: 'Erro', className: 'bg-rose-100 text-rose-700' };
+      return { label: 'Erro', className: 'bg-rose-950 text-rose-200' };
     }
-    return { label: 'Nao conectado', className: 'bg-slate-100 text-slate-600' };
+    return { label: 'Não conectado', className: 'bg-secondary text-slate-300' };
   }, [metaIntegration]);
 
   const sortedCampaigns = useMemo(
@@ -189,7 +189,7 @@ const ClientConnection = () => {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-[#2563EB] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-slate-600">Carregando cliente...</p>
+            <p className="text-slate-300">Carregando cliente...</p>
           </div>
         </div>
       </Layout>
@@ -199,9 +199,9 @@ const ClientConnection = () => {
   if (!client) {
     return (
       <Layout>
-        <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
-          <h2 className="text-xl font-semibold text-slate-900">Cliente nao encontrado</h2>
-          <p className="text-slate-500 mt-2">Volte para a lista e selecione outro cliente.</p>
+        <div className="dash-panel p-8 text-center">
+          <h2 className="text-xl font-semibold text-slate-100">Cliente não encontrado</h2>
+          <p className="text-slate-400 mt-2">Volte para a lista e selecione outro cliente.</p>
           <Button className="mt-4" onClick={() => navigate('/clients')}>
             <ChevronLeft className="w-4 h-4 mr-2" />
             Voltar para clientes
@@ -214,7 +214,7 @@ const ClientConnection = () => {
   return (
     <>
       <Helmet>
-        <title>Conexao - {client.name} | DashFlow</title>
+        <title>Conexões — {client.name} | DASH</title>
         <meta name="description" content="Gerencie conexoes e campanhas do cliente" />
       </Helmet>
       <Layout>
@@ -225,38 +225,38 @@ const ClientConnection = () => {
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Voltar para clientes
               </Button>
-              <h1 className="text-3xl font-bold text-slate-900">{client.name}</h1>
-              <p className="text-slate-600 mt-1">
+              <h1 className="text-3xl font-bold text-slate-100">{client.name}</h1>
+              <p className="text-slate-300 mt-1">
                 {client.company || 'Empresa nao informada'} {client.email ? `- ${client.email}` : ''}
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+            <div className="dash-panel p-6 space-y-4">
               <div className="flex items-center gap-2">
-                <Plug className="w-5 h-5 text-[#2563EB]" />
-                <h2 className="text-lg font-semibold text-slate-900">Conexoes</h2>
+                <Plug className="w-5 h-5 text-blue-300" />
+                <h2 className="text-lg font-semibold text-slate-100">Conexões</h2>
               </div>
 
-              <div className="flex items-center justify-between border border-slate-200 rounded-lg p-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 border border-border rounded-lg p-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-medium text-slate-900">Google Ads</p>
+                    <p className="font-medium text-slate-100">Google Ads</p>
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusMeta.className}`}>
                       {statusMeta.label}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-400">
                     {googleIntegration
                       ? 'Conta conectada para este cliente'
                       : 'Conecte a conta do cliente'}
                   </p>
                   {googleIntegration?.account_id && (
-                    <p className="text-xs text-slate-500 mt-1">Account ID: {googleIntegration.account_id}</p>
+                    <p className="text-xs text-slate-400 mt-1">Account ID: {googleIntegration.account_id}</p>
                   )}
                   {googleIntegration?.sync_error && (
-                    <p className="text-xs text-rose-600 mt-1">Erro sync: {googleIntegration.sync_error}</p>
+                    <p className="text-xs text-rose-300 mt-1">Erro sync: {googleIntegration.sync_error}</p>
                   )}
                 </div>
                 
@@ -280,22 +280,22 @@ const ClientConnection = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between border border-slate-200 rounded-lg p-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 border border-border rounded-lg p-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-medium text-slate-900">Meta Ads</p>
+                    <p className="font-medium text-slate-100">Meta Ads</p>
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusMetaAdsBadge.className}`}>
                       {statusMetaAdsBadge.label}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-400">
                     {metaIntegration
                       ? 'Conta conectada para este cliente'
                       : 'Conecte a conta do cliente'}
                   </p>
-                  {metaIntegration?.account_id && <p className="text-xs text-slate-500 mt-1">Conta: {metaIntegration.account_id}</p>}
+                  {metaIntegration?.account_id && <p className="text-xs text-slate-400 mt-1">Conta: {metaIntegration.account_id}</p>}
                   {metaIntegration?.sync_error && (
-                    <p className="text-xs text-rose-600 mt-1">Erro sync: {metaIntegration.sync_error}</p>
+                    <p className="text-xs text-rose-300 mt-1">Erro sync: {metaIntegration.sync_error}</p>
                   )}
                 </div>
                 
@@ -318,11 +318,11 @@ const ClientConnection = () => {
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4 flex flex-col h-full">
-              <div className="flex items-center justify-between">
+            <div className="dash-panel p-6 space-y-4 flex flex-col h-full">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <Megaphone className="w-5 h-5 text-[#2563EB]" />
-                  <h2 className="text-lg font-semibold text-slate-900">Campanhas</h2>
+                  <Megaphone className="w-5 h-5 text-blue-300" />
+                  <h2 className="text-lg font-semibold text-slate-100">Campanhas</h2>
                 </div>
                 {(
                   <div className="flex items-center">
@@ -342,7 +342,7 @@ const ClientConnection = () => {
               {sortedCampaigns.length === 0 ? (
                 <div className="text-center py-10">
                   <Link2Off className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-                  <p className="text-slate-500">Nenhuma campanha encontrada.</p>
+                  <p className="text-slate-400">Nenhuma campanha encontrada.</p>
                   <p className="text-sm text-slate-400 mt-1">
                     Conecte e sincronize para buscar campanhas deste cliente.
                   </p>
@@ -350,19 +350,19 @@ const ClientConnection = () => {
               ) : (
                 <div className="space-y-3">
                   {sortedCampaigns.map((campaign) => (
-                    <div key={campaign.id} className="border border-slate-200 rounded-lg p-3">
+                    <div key={campaign.id} className="border border-border rounded-lg p-3">
                       <div className="flex justify-between gap-4">
                         <div>
-                          <p className="font-medium text-slate-900">{campaign.name}</p>
-                          <p className="text-xs text-slate-500">
+                          <p className="font-medium text-slate-100">{campaign.name}</p>
+                          <p className="text-xs text-slate-400">
                             {campaign.platform === 'meta_ads' ? 'Meta Ads' : 'Google Ads'}
                           </p>
                         </div>
-                        <span className="text-sm text-slate-700">{campaign.status}</span>
+                        <span className="text-sm text-slate-200">{({active: 'Ativa', paused: 'Pausada', ended: 'Encerrada', archived: 'Arquivada', deleted: 'Excluída'})[campaign.status] || 'Desconhecido'}</span>
                       </div>
-                      <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-slate-600">
-                        <span>Spend: R$ {campaign.spend}</span>
-                        <span>CTR: {campaign.ctr}%</span>
+                      <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-slate-300">
+                        <span>Gasto: {Number(campaign.spend).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        <span>CTR: {Number(campaign.ctr).toLocaleString('pt-BR')}%</span>
                         <span>Conv: {campaign.conversions}</span>
                       </div>
                     </div>

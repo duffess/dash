@@ -90,34 +90,33 @@ export default function Reports() {
   };
 
   return (
-    <><Helmet><title>Relatórios - DashFlow</title></Helmet><Layout>
+    <><Helmet><title>Relatórios — DASH</title></Helmet><Layout>
       <div className="space-y-6">
         <div><h1 className="text-3xl font-bold text-white">Relatórios</h1><p className="text-slate-300 mt-1">Métricas salvas por cliente, com análise IA opcional.</p></div>
-        <DemoReport aiConfigured={ai?.configured} demoAIEnabled={ai?.demo_ai_enabled} />
-        {error && <div role="alert" className="border border-red-200 text-red-700 p-4 rounded-lg">{error} <Button variant="outline" onClick={() => setRefresh((v) => v + 1)}>Tentar novamente</Button></div>}
-        <form onSubmit={create} className="bg-white border rounded-xl p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900">Novo relatório</h2>
-          <label className="block text-slate-700">Cliente
+        {error && <div role="alert" className="border border-red-400/30 text-red-300 p-4 rounded-lg">{error} <Button variant="outline" onClick={() => setRefresh((v) => v + 1)}>Tentar novamente</Button></div>}
+        <form onSubmit={create} className="dash-panel p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-slate-100">Novo relatório</h2>
+          <label className="block text-slate-200">Cliente
             <select aria-label="Cliente do relatório" value={selectedClient} disabled={busy}
               onChange={(e) => { setPage(0); setParams(e.target.value ? { client_id: e.target.value } : {}); }}
-              className="block w-full border rounded-md p-2 mt-1 bg-white">
+              className="block w-full border rounded-md p-2 mt-1 bg-card">
               <option value="">Todos os clientes — selecione um para criar</option>
               {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
             </select>
           </label>
-          <label className="block text-slate-700">Título
+          <label className="block text-slate-200">Título
             <input required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy}
               className="block w-full border rounded-md p-2 mt-1" />
           </label>
-          <p className="text-sm text-slate-500">Período: últimos 30 dias de cada sincronização. Datas personalizadas estarão disponíveis quando houver histórico diário.</p>
+          <p className="text-sm text-slate-400">Período: últimos 30 dias de cada sincronização. Datas personalizadas estarão disponíveis quando houver histórico diário.</p>
           {loadingPreview && <p role="status">Consultando campanhas...</p>}
-          {previewMessage && <p className="text-amber-700">{previewMessage}</p>}
-          {preview && <p className="text-slate-600">{preview.campaigns.length} campanhas disponíveis para este cliente.</p>}
-          <label className="flex gap-2 items-center text-slate-700">
+          {previewMessage && <p className="text-amber-200">{previewMessage}</p>}
+          {preview && <p className="text-slate-300">{preview.campaigns.length} campanhas disponíveis para este cliente.</p>}
+          <label className="flex gap-2 items-center text-slate-200">
             <input type="checkbox" checked={includeAI} disabled={busy || !ai?.configured}
               onChange={(e) => setIncludeAI(e.target.checked)} /> Incluir nova análise IA
           </label>
-          <p className="text-xs text-slate-500">{ai?.configured ? 'Ao incluir IA, as métricas e nomes das campanhas serão enviados à OpenAI. A chamada consome créditos da API.' : 'IA indisponível: configure OPENAI_API_KEY no backend. Relatórios de métricas não dependem dessa chave.'}</p>
+          <p className="text-xs text-slate-400">{ai?.configured ? 'Ao incluir IA, as métricas e nomes das campanhas serão enviados à OpenAI. A chamada consome créditos da API.' : 'IA ainda não configurada. Você pode criar relatórios de métricas sem análise de IA.'}</p>
           <Button type="submit" disabled={busy || !preview || loadingPreview || !selectedClient || !title.trim()}>
             {busy ? 'Gerando relatório...' : 'Criar relatório'}
           </Button>
@@ -127,7 +126,7 @@ export default function Reports() {
         {detail && <ReportDetail report={detail} exporting={exporting} onExport={download}
           onClose={() => setParams(selectedClient ? { client_id: selectedClient } : {})} />}
         <h2 className="text-xl font-semibold text-white">Histórico</h2>
-        {loading ? <p role="status">Carregando relatórios...</p> : reports.length === 0 ? <p className="text-slate-500">Nenhum relatório salvo nesta seleção.</p> :
+        {loading ? <p role="status">Carregando relatórios...</p> : reports.length === 0 ? <p className="text-slate-400">Nenhum relatório salvo nesta seleção.</p> :
           <div className="grid md:grid-cols-2 gap-4">{reports.map((report) => <ReportCard key={report.id} report={report}
             disabled={exporting || busy} onExport={download}
             onView={(id) => setParams({ ...(selectedClient ? { client_id: selectedClient } : {}), report_id: id })} />)}</div>}
@@ -135,7 +134,8 @@ export default function Reports() {
           <Button variant="outline" disabled={loading || page === 0} onClick={() => setPage((p) => p - 1)}>Anterior</Button>
           <Button variant="outline" disabled={loading || reports.length < 20} onClick={() => setPage((p) => p + 1)}>Próxima</Button>
         </div>
-        <p className="text-xs text-slate-500">PDF: use “Imprimir / Salvar PDF” e escolha “Salvar como PDF” no navegador.</p>
+        <details className="dash-panel p-5"><summary className="cursor-pointer text-sm font-medium">Laboratório de relatórios · dados demonstrativos</summary><div className="mt-4"><DemoReport aiConfigured={ai?.configured} demoAIEnabled={ai?.demo_ai_enabled} /></div></details>
+        <p className="text-xs text-slate-400">PDF: use “Imprimir / Salvar PDF” e escolha “Salvar como PDF” no navegador.</p>
       </div>
     </Layout></>
   );
