@@ -36,7 +36,7 @@ async def safe_validation_error(request, exc):
 
 app.add_middleware(SecurityHTTPMiddleware, settings=settings, policy=request_policy)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts)
-if settings.app_env == "production":
+if settings.app_env == "production" and settings.https_redirect_enabled:
     app.add_middleware(HTTPSRedirectMiddleware)
 # CORS wraps admission errors too, so the frontend can read 413/429 responses.
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=True,

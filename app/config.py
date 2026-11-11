@@ -12,6 +12,7 @@ load_secret_files()
 class Settings(BaseSettings):
     app_name: str = "DashFlow"
     app_env: Literal["development", "test", "production"] = "development"
+    https_redirect_enabled: bool = True
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8501"]
     trusted_hosts: list[str] = ["localhost", "127.0.0.1", "testserver"]
     max_request_bytes: int = 262144
