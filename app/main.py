@@ -67,8 +67,10 @@ def readiness():
     except Exception as exc:
         original = getattr(exc, "orig", exc)
         message = str(original).lower()
-        if isinstance(exc, OperationalError) and ("password authentication failed" in message or "authentication failed" in message or "tenant or user not found" in message):
-            category = "authentication"
+        if "tenant or user not found" in message:
+            category = "authentication_tenant_or_user"
+        elif isinstance(exc, OperationalError) and ("password authentication failed" in message or "authentication failed" in message):
+            category = "authentication_password"
         elif "ssl" in message or "certificate" in message:
             category = "tls"
         elif any(word in message for word in ("could not translate host", "name or service not known", "connection refused", "timed out", "network is unreachable")):
