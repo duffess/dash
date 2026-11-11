@@ -11,6 +11,8 @@ from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi import Request, HTTPException
 from sqlalchemy import text
 import secrets
+import logging
+from sqlalchemy.exc import OperationalError
 from app.routers import auth, campaign, client, google_oauth, meta_oauth, integration
 
 configure_access_logging()
@@ -62,7 +64,18 @@ def readiness():
     try:
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
-    except Exception:
+    except Exception as exc:
+        original = getattr(exc, "orig", exc)
+        message = str(original).lower()
+        if isinstance(exc, OperationalError) and ("password authentication failed" in message or "authentication failed" in message or "tenant or user not found" in message):
+            category = "authentication"
+        elif "ssl" in message or "certificate" in message:
+            category = "tls"
+        elif any(word in message for word in ("could not translate host", "name or service not known", "connection refused", "timed out", "network is unreachable")):
+            category = "network"
+        else:
+            category = "other"
+        logging.getLogger("dash.readiness").warning("Database readiness failed: category=%s", category)
         raise HTTPException(status_code=503, detail="Serviço temporariamente indisponível.") from None
     return {"status": "ready"}
 
