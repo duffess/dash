@@ -184,12 +184,13 @@ class EncryptionContracts(unittest.TestCase):
     def test_backup_round_trip_and_restore_never_overwrites(self):
         target = definitions("scripts/maintenance/database_backup.py", ["private_file", "encrypt_backup", "restore_file", "snapshot_sqlite"],
                              os=os, Path=Path, sqlite3=sqlite3, Fernet=Fernet, MAX_BYTES=128*1024*1024)
-        with tempfile.TemporaryDirectory(dir="/scratch") as temp:
+        with tempfile.TemporaryDirectory() as temp:
             directory = Path(temp)
             db = directory / "source.sqlite"
             with sqlite3.connect(db) as connection:
                 connection.execute("CREATE TABLE fixtures (label TEXT)")
                 connection.execute("INSERT INTO fixtures VALUES ('dummy')")
+            connection.close()
             snapshot = directory / "snapshot.sqlite"
             target.snapshot_sqlite(db, snapshot)
             key = Fernet.generate_key()
@@ -199,6 +200,7 @@ class EncryptionContracts(unittest.TestCase):
             target.restore_file(encrypted, restored, key)
             with sqlite3.connect(restored) as connection:
                 self.assertEqual(connection.execute("SELECT label FROM fixtures").fetchone()[0], "dummy")
+            connection.close()
             with self.assertRaises(ValueError):
                 target.restore_file(encrypted, restored, key)
 

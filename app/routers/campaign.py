@@ -9,6 +9,7 @@ from app.models.client import Client
 from app.models.user import User
 from app.schemas.campaign import CampaignInsightResponse, CampaignResponse, CampaignSummaryResponse, PlatformType
 from app.utils.auth import get_current_user
+from app.config import get_settings
 from app.utils.campaign_data import real_campaign_filter
 from app.routers.insight import get_global_insights
 
@@ -52,7 +53,9 @@ def list_campaigns(
             client_name=row.client_name,
             platform_account_id=row.Campaign.platform_account_id or "",
             objective=row.Campaign.objective or "",
-            source="synced",
+            source="mock" if get_settings().app_env == "development" and current_user.email == "demonstracao-dash@exemplo.com" and row.Campaign.external_id.startswith("local-demo-") else "synced",
+            report_metrics=row.Campaign.report_metrics,
+            last_synced_at=row.Campaign.last_synced_at,
         )
         for row in query.order_by(Campaign.name, Campaign.id).all()
     ]

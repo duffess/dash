@@ -9,6 +9,14 @@ import { Button } from '@/components/ui/button';
 import api from '@/lib/api';
 import DemoReport from '@/reports/DemoReport';
 
+const METRIC_OPTIONS = [
+  ['spend', 'Investimento'], ['impressions', 'Impressões'], ['clicks', 'Cliques'],
+  ['conversions', 'Conversões'], ['leads', 'Leads'], ['purchases', 'Compras'],
+  ['revenue', 'Receita atribuída'], ['ctr', 'CTR'], ['cpc', 'CPC'], ['cpm', 'CPM'],
+  ['cpl', 'Custo por lead'], ['cpa', 'Custo por compra'], ['roas', 'ROAS'],
+];
+const INITIAL_METRICS = ['spend', 'impressions', 'clicks', 'ctr', 'cpc'];
+
 export default function Reports() {
   const [params, setParams] = useSearchParams();
   const selectedClient = params.get('client_id') || '';
@@ -17,7 +25,6 @@ export default function Reports() {
   const [reports, setReports] = useState([]);
   const [detail, setDetail] = useState(null);
   const [title, setTitle] = useState('Relatório de campanhas');
-  const [includeAI, setIncludeAI] = useState(false);
   const [ai, setAI] = useState(null);
   const [preview, setPreview] = useState(null);
   const [previewMessage, setPreviewMessage] = useState('');
@@ -29,6 +36,32 @@ export default function Reports() {
   const [page, setPage] = useState(0);
   const [refresh, setRefresh] = useState(0);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [defaultMetrics, setDefaultMetrics] = useState(INITIAL_METRICS);
+  const [metricChoice, setMetricChoice] = useState(INITIAL_METRICS);
+  const [campaignChoices, setCampaignChoices] = useState({});
+  const [defaultStatus, setDefaultStatus] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    api.get('/reports/metric-defaults').then(({ data }) => {
+      if (active && data.metrics?.length) { setDefaultMetrics(data.metrics); setMetricChoice(data.metrics); }
+    }).catch(() => { if (active) setDefaultStatus('Não foi possível carregar o padrão salvo.'); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!preview) { setCampaignChoices({}); return; }
+    setCampaignChoices(Object.fromEntries(preview.campaigns.map(campaign => [campaign.id, { selected: true, metrics: [...defaultMetrics] }])));
+  }, [preview, defaultMetrics]);
+
+  const toggleMetric = (values, key) => values.includes(key) ? values.filter(value => value !== key) : [...values, key];
+  const saveDefault = async () => {
+    if (!metricChoice.length) { setDefaultStatus('Escolha ao menos uma métrica para salvar.'); return; }
+    try {
+      const { data } = await api.put('/reports/metric-defaults', { metrics: metricChoice });
+      setDefaultMetrics(data.metrics); setDefaultStatus('Padrão salvo para sua conta.');
+    } catch { setDefaultStatus('Não foi possível salvar o padrão. Tente novamente.'); }
+  };
 
   useEffect(() => {
     let active = true;
@@ -74,7 +107,11 @@ export default function Reports() {
     event.preventDefault();
     setBusy(true); setError('');
     try {
-      const { data } = await api.post('/reports/', { client_id: selectedClient, title: title.trim(), include_ai: includeAI });
+      const campaignMetrics = Object.fromEntries(Object.entries(campaignChoices).filter(([, choice]) => choice.selected).map(([id, choice]) => [id, choice.metrics]));
+      if (!Object.keys(campaignMetrics).length || Object.values(campaignMetrics).some(metrics => !metrics.length)) {
+        setError('Selecione ao menos uma campanha e uma métrica para cada campanha escolhida.'); return;
+      }
+      const { data } = await api.post('/reports/', { client_id: selectedClient, title: title.trim(), include_ai: false, campaign_metrics: campaignMetrics });
       setPage(0); setRefresh((value) => value + 1);
       setParams({ client_id: selectedClient, report_id: data.id });
     } catch (err) {
@@ -92,7 +129,7 @@ export default function Reports() {
   return (
     <><Helmet><title>Relatórios — DASH</title></Helmet><Layout>
       <div className="space-y-6">
-        <div><h1 className="text-3xl font-bold text-white">Relatórios</h1><p className="text-slate-300 mt-1">Métricas salvas por cliente, com análise IA opcional.</p></div>
+        <div><h1 className="text-3xl font-bold text-white">Relatórios</h1><p className="text-slate-300 mt-1">Escolha campanhas e métricas para cada cliente.</p></div>
         {error && <div role="alert" className="border border-red-400/30 text-red-300 p-4 rounded-lg">{error} <Button variant="outline" onClick={() => setRefresh((v) => v + 1)}>Tentar novamente</Button></div>}
         <form onSubmit={create} className="dash-panel p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-100">Novo relatório</h2>
@@ -112,11 +149,22 @@ export default function Reports() {
           {loadingPreview && <p role="status">Consultando campanhas...</p>}
           {previewMessage && <p className="text-amber-200">{previewMessage}</p>}
           {preview && <p className="text-slate-300">{preview.campaigns.length} campanhas disponíveis para este cliente.</p>}
-          <label className="flex gap-2 items-center text-slate-200">
-            <input type="checkbox" checked={includeAI} disabled={busy || !ai?.configured}
-              onChange={(e) => setIncludeAI(e.target.checked)} /> Incluir nova análise IA
-          </label>
-          <p className="text-xs text-slate-400">{ai?.configured ? 'Ao incluir IA, as métricas e nomes das campanhas serão enviados à OpenAI. A chamada consome créditos da API.' : 'IA ainda não configurada. Você pode criar relatórios de métricas sem análise de IA.'}</p>
+          <fieldset className="report-config-block"><legend>Seu padrão de métricas</legend><p>Escolha as métricas que serão selecionadas automaticamente para novas campanhas. Você pode ajustar cada campanha abaixo.</p>
+            <div className="report-metric-options">{METRIC_OPTIONS.map(([key,label]) => <label key={key}><input type="checkbox" checked={metricChoice.includes(key)} onChange={() => setMetricChoice(values => toggleMetric(values,key))} />{label}</label>)}</div>
+            <Button type="button" variant="outline" onClick={saveDefault}>Salvar padrão</Button> <span role="status" className="report-config-status">{defaultStatus}</span>
+          </fieldset>
+          {preview && <fieldset className="report-config-block"><legend>Campanhas e métricas</legend><p>Escolha as campanhas e personalize as métricas de cada uma. Métricas indisponíveis não serão inventadas no relatório.</p>
+            <div className="report-campaign-list">{preview.campaigns.map(campaign => {
+              const choice = campaignChoices[campaign.id] || {selected:false, metrics:[]};
+              const selectedLabels = METRIC_OPTIONS.filter(([key]) => choice.metrics.includes(key)).map(([, label]) => label);
+              return <div className="report-campaign-choice" key={campaign.id}><label className="report-campaign-toggle"><input type="checkbox" checked={choice.selected} onChange={e => setCampaignChoices(prev => ({...prev, [campaign.id]: {...choice, selected:e.target.checked}}))} /><strong>{campaign.name}</strong><span>{campaign.platform === 'meta_ads' ? 'Meta Ads' : 'Google Ads'}</span></label>
+                {choice.selected ? <><p className="report-campaign-summary">{selectedLabels.length ? selectedLabels.join(' · ') : 'Escolha ao menos uma métrica para incluir esta campanha.'}</p><details className="report-campaign-details"><summary><span>{selectedLabels.length ? `${selectedLabels.length} ${selectedLabels.length === 1 ? 'métrica selecionada' : 'métricas selecionadas'}` : 'Nenhuma métrica selecionada'}</span><span className="report-campaign-action">Personalizar métricas</span></summary>
+                  <div className="report-metric-options">{METRIC_OPTIONS.map(([key,label]) => <label key={key}><input type="checkbox" checked={choice.metrics.includes(key)} onChange={() => setCampaignChoices(prev => ({...prev, [campaign.id]: {...choice, metrics:toggleMetric(choice.metrics,key)}}))} />{label}</label>)}</div>
+                </details></> : <p className="report-campaign-excluded">Fora deste relatório</p>}
+              </div>;
+            })}</div>
+          </fieldset>}
+          <p className="text-xs text-slate-400">Análise por IA para relatórios personalizados ficará disponível em uma próxima etapa.</p>
           <Button type="submit" disabled={busy || !preview || loadingPreview || !selectedClient || !title.trim()}>
             {busy ? 'Gerando relatório...' : 'Criar relatório'}
           </Button>

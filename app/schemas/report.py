@@ -8,6 +8,11 @@ class ReportCreate(BaseModel):
     title: str = Field(default="Relatório de campanhas", min_length=1, max_length=200)
     include_ai: bool = False
     insight_id: Optional[str] = None
+    campaign_metrics: Optional[dict[str, list[str]]] = None
+
+
+class ReportMetricDefaults(BaseModel):
+    metrics: list[str] = Field(min_length=1, max_length=20)
 
 
 class ReportSummary(BaseModel):

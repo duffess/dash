@@ -37,7 +37,9 @@ def enrich_snapshot(snapshot):
     groups = {}
     for row in data["campaigns"]:
         # An explicit metrics dictionary is authoritative, even if empty.
-        row["metrics"] = metrics(row.get("metrics", row))
+        if data.get("metric_selection"):
+            row.setdefault("_source_metrics", row.get("metrics", {}))
+        row["metrics"] = metrics(row.get("_source_metrics", row.get("metrics", row)))
         row["available_metrics"] = list(row["metrics"])
         key = (row.get("platform"), row.get("account_id"), row.get("currency"))
         groups.setdefault(key, []).append(row)
@@ -47,6 +49,9 @@ def enrich_snapshot(snapshot):
         totals = {k: sum(r["metrics"][k] for r in rows) for k in BASE
                   if all(k in r["metrics"] for r in rows)}
         values = metrics(totals)
+        if data.get("metric_selection"):
+            common = set.intersection(*(set(data["metric_selection"].get(r["id"], [])) for r in rows))
+            values = {k: v for k, v in values.items() if k in common}
         accounts.append(dict(platform=platform, account_id=account_id, currency=currency,
                              campaign_count=len(rows), metrics=values, **values))
     data["accounts"] = accounts
@@ -77,4 +82,11 @@ def enrich_snapshot(snapshot):
                 if prior is not None and prior > 0:
                     data["comparisons"].append(dict(campaign=row["name"], metric=key,
                         previous=prior, current=value, change_percent=round((value / prior - 1) * 100, 2)))
+    if data.get("metric_selection"):
+        selected = data["metric_selection"]
+        for row in data["campaigns"]:
+            row["metrics"] = {key: row["metrics"][key] for key in selected.get(row["id"], []) if key in row["metrics"]}
+            row["available_metrics"] = list(row["metrics"])
+        data["metric_definitions"] = {k: v for k, v in data["metric_definitions"].items() if any(k in r["metrics"] for r in data["campaigns"])}
+        data["comparisons"] = [r for r in data["comparisons"] if any(c["name"] == r["campaign"] and r["metric"] in c["metrics"] for c in data["campaigns"])]
     return data

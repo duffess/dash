@@ -11,7 +11,7 @@ export default function ReportDetail({ report, onClose, onExport, exporting }) {
     <section className="space-y-3" aria-label="Relatório selecionado">
       <div className="flex flex-wrap gap-2 items-center justify-between dash-panel p-4">
         <div><h2 className="font-semibold text-slate-100">{report.title}</h2>
-          <p className="text-sm text-slate-300">{data.source === 'demo' ? 'Dados fictícios · Não salvo no histórico real' : 'Retrato dos dados disponíveis na geração'}</p></div>
+          <p className="text-sm text-slate-300">{data.source === 'demo' ? (report.id.startsWith('demo-') ? 'Dados fictícios · Não salvo no histórico' : 'Dados fictícios · Salvo no histórico local') : 'Retrato dos dados disponíveis na geração'}</p></div>
         <div className="flex flex-wrap gap-2">
           <Button disabled={exporting} onClick={() => onExport(report.id, false)}>Baixar HTML</Button>
           <Button disabled={exporting} variant="outline" onClick={() => onExport(report.id, true)}>Imprimir / Salvar PDF</Button>

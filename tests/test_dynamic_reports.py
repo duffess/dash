@@ -64,6 +64,33 @@ class DemoReportFlowTests(unittest.TestCase):
     tearDown = fixtures.CampaignFlowTests.tearDown
     campaign = fixtures.CampaignFlowTests.campaign
 
+    def test_report_selection_preserves_only_chosen_campaigns_and_metrics(self):
+        first = self.campaign('chosen')
+        first.report_metrics = {'spend': 100, 'clicks': 10, 'impressions': 100}
+        other = self.campaign('not-selected')
+        self.db.commit()
+        response = self.http.post('/reports/', json={'client_id':'c1', 'campaign_metrics':{first.id:['cpc']}})
+        self.assertEqual(response.status_code, 201, response.text)
+        result = response.json()
+        self.assertEqual(len(result['snapshot']['campaigns']), 1)
+        self.assertEqual(result['snapshot']['campaigns'][0]['metrics'], {'cpc': 10.0})
+        self.assertNotIn('not-selected', result['rendered_html'])
+        self.assertNotIn('Impressões</td>', result['rendered_html'])
+        stored = self.http.get('/reports/' + result['id']).json()
+        self.assertEqual(stored['snapshot']['campaigns'][0]['metrics'], {'cpc': 10.0})
+        self.assertEqual(self.http.post('/reports/', json={'client_id':'c1', 'campaign_metrics':{other.id:['invalid']}}).status_code, 422)
+        foreign = self.campaign('foreign', client='c3')
+        self.assertEqual(self.http.post('/reports/', json={'client_id':'c1', 'campaign_metrics':{foreign.id:['spend']}}).status_code, 422)
+
+    def test_metric_defaults_are_per_user(self):
+        self.assertEqual(self.http.put('/reports/metric-defaults', json={'metrics':['spend','clicks']}).status_code, 200)
+        self.assertEqual(self.http.get('/reports/metric-defaults').json()['metrics'], ['spend','clicks'])
+        from app.main import app
+        from app.utils.auth import get_current_user
+        from app.models.user import User
+        app.dependency_overrides[get_current_user] = lambda: self.db.query(User).filter_by(id='u2').one()
+        self.assertIsNone(self.http.get('/reports/metric-defaults').json()['metrics'])
+
     def test_demo_scenarios_are_isolated_and_do_not_call_ai_by_default(self):
         with patch("app.routers.report.generate_analysis") as ai:
             for scenario in ("leads", "sales", "limited", "zero"):

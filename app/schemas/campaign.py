@@ -28,6 +28,8 @@ class CampaignResponse(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     source: Literal["synced", "mock"] = "synced"
+    report_metrics: Optional[dict] = None
+    last_synced_at: Optional[datetime] = None
     updated_at: datetime
 
 
