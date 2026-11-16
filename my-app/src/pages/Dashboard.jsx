@@ -3,15 +3,18 @@ import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import MetricCard from '@/dashboard/MetricCard';
 import PerformanceChart from '@/dashboard/PerformanceChart';
 import InsightCard from '@/dashboard/InsightCard';
+import CampaignSpotlight from '@/dashboard/CampaignSpotlight';
 import CampaignCard from '@/campaigns/CampaignCard';
 import { Button } from '@/components/ui/button';
 import { BarChart3, MousePointer, Target, Wallet, CalendarDays, ArrowRight, Users, FileText, Megaphone } from 'lucide-react';
 const number = (value) => Number.isFinite(value) ? value.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '—';
 const money = (value) => Number.isFinite(value) ? value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—';
 export default function Dashboard() {
+  const { user } = useAuth();
   const [metrics, setMetrics] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,20 +35,24 @@ export default function Dashboard() {
     return () => { active = false; };
   }, [retry]);
   const hasData = metrics?.campaign_count > 0;
+  // Comparison fixtures are restricted to the local demonstration account.
+  const demoComparison = import.meta.env.DEV && user?.email === 'demonstracao-dash@exemplo.com' && hasData;
+  const previous = (key, factor) => demoComparison && Number.isFinite(metrics[key]) ? metrics[key] * factor : undefined;
   const value = (key, format = number) => hasData ? format(metrics[key]) : '—';
   return <><Helmet><title>Visão geral — DASH</title></Helmet><Layout>
     <div className="overview-heading"><div><span className="dash-kicker">SEU PANORAMA DE MÍDIA</span><h1>Visão geral</h1><p>Os resultados dos seus clientes, com espaço para enxergar o que importa.</p></div><span className="dash-chip"><CalendarDays size={16} aria-hidden="true" />Últimos 30 dias</span></div>
     {error && <div role="alert" className="dash-panel p-5 mb-5 text-red-200 flex flex-wrap items-center justify-between gap-3">{error}<Button variant="outline" onClick={() => setRetry(v => v + 1)}>Tentar novamente</Button></div>}
+    <CampaignSpotlight demo={demoComparison} loading={loading} />
     <div className="overview-top">
       <section className="dash-panel agency-summary" aria-label="Resumo de resultados" aria-busy={loading}>
         <div className="agency-heading"><div className="agency-mark"><BarChart3 size={25} aria-hidden="true" /></div><div><h2>Resumo da agência</h2><p>{loading ? 'Carregando indicadores…' : error ? 'Indicadores indisponíveis' : hasData ? `${metrics.campaign_count} campanhas · Google Ads e Meta Ads` : 'Nenhuma campanha sincronizada'}</p></div></div>
         <div className="metric-grid">
-          <MetricCard title="Investimento" value={value('total_spend', money)} icon={Wallet} />
-          <MetricCard title="Conversões" value={value('total_conversions')} icon={Target} />
-          <MetricCard title="CPC médio" value={value('avg_cpc', money)} icon={MousePointer} />
-          <MetricCard title="CTR médio" value={hasData ? `${number(metrics.avg_ctr)}%` : '—'} icon={BarChart3} />
+          <MetricCard title="Investimento" value={value('total_spend', money)} icon={Wallet} preference="neutral" loading={loading} current={demoComparison ? metrics.total_spend : undefined} previous={previous('total_spend', 0.9)} formatValue={money} />
+          <MetricCard title="Conversões" value={value('total_conversions')} icon={Target} preference="higher" loading={loading} current={demoComparison ? metrics.total_conversions : undefined} previous={previous('total_conversions', 0.8)} formatValue={number} />
+          <MetricCard title="CPC médio" value={value('avg_cpc', money)} icon={MousePointer} preference="lower" loading={loading} current={demoComparison ? metrics.avg_cpc : undefined} previous={previous('avg_cpc', 0.9)} formatValue={money} />
+          <MetricCard title="CTR médio" value={hasData ? `${number(metrics.avg_ctr)}%` : '—'} icon={BarChart3} preference="higher" loading={loading} current={demoComparison ? metrics.avg_ctr : undefined} previous={previous('avg_ctr', 1.1)} formatValue={v => `${number(v)}%`} />
         </div>
-        <div className="summary-footer"><span role="status">{loading ? 'Consultando dados…' : hasData ? 'Janela de 30 dias de cada sincronização' : error ? 'Confira sua conexão e tente novamente.' : 'Conecte uma conta na página do cliente.'}</span><Link className="dash-link" to={hasData ? '/reports' : '/clients'}>{hasData ? 'Ver relatórios' : 'Ver clientes'}<ArrowRight size={16} aria-hidden="true" /></Link></div>
+        <div className="summary-footer"><span role="status">{loading ? 'Consultando dados…' : demoComparison ? 'Demonstração local · comparação com dados fictícios' : hasData ? 'Janela de 30 dias de cada sincronização' : error ? 'Confira sua conexão e tente novamente.' : 'Conecte uma conta na página do cliente.'}</span><Link className="dash-link" to={hasData ? '/reports' : '/clients'}>{hasData ? 'Ver relatórios' : 'Ver clientes'}<ArrowRight size={16} aria-hidden="true" /></Link></div>
       </section><InsightCard />
     </div>
     <section className="campaign-preview"><div className="panel-heading"><div><h2>Campanhas dos clientes</h2><p>Uma leitura rápida das campanhas sincronizadas.</p></div><Link to="/campaigns" className="dash-link">Ver todas<ArrowRight size={16} aria-hidden="true" /></Link></div>

@@ -15,6 +15,7 @@ const Campaigns = () => {
 
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState('');
+  const [selectedPlatform, setSelectedPlatform] = useState('');
   const [error, setError] = useState('');
   const [clientsError, setClientsError] = useState('');
   const [retry, setRetry] = useState(0);
@@ -44,7 +45,7 @@ const Campaigns = () => {
   }, [selectedClient, retry]);
 
   const filteredCampaigns = campaigns.filter(campaign =>
-    campaign.name.toLowerCase().includes(searchTerm.toLowerCase())
+    campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) && (!selectedPlatform || campaign.platform === selectedPlatform)
   );
 
 
@@ -66,6 +67,13 @@ const Campaigns = () => {
               <Plus className="w-5 h-5 mr-2" />
               Criação em breve
             </Button>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="campaign-platform" className="text-sm font-medium text-slate-200">Plataforma</label>
+            <select id="campaign-platform" value={selectedPlatform} onChange={event => setSelectedPlatform(event.target.value)} className="w-full rounded-md border border-input bg-card px-3 py-2 text-slate-100">
+              <option value="">Todas as plataformas</option><option value="meta_ads">Meta Ads</option><option value="google_ads">Google Ads</option>
+            </select>
           </div>
 
           <div className="space-y-2">
@@ -115,7 +123,7 @@ const Campaigns = () => {
 
           {!loading && !error && filteredCampaigns.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-slate-400">{searchTerm ? "Nenhuma campanha corresponde à busca." : "Nenhuma campanha sincronizada. Conecte e sincronize a conta na página do cliente."}</p>
+              <p className="text-slate-400">{searchTerm || selectedPlatform ? "Nenhuma campanha encontrada para esses filtros." : "Nenhuma campanha sincronizada. Conecte e sincronize a conta na página do cliente."}</p>
             </div>
           )}
         </div>

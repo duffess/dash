@@ -8,9 +8,9 @@ from app.models.client import Client
 from app.models.user import User
 from app.models.report import Report
 from app.models.insight import Insight
-from app.schemas.report import ReportCreate, ReportResponse, ReportSummary, DemoReportCreate
+from app.schemas.report import ReportCreate, ReportResponse, ReportSummary, DemoReportCreate, ReportMetricDefaults
 from app.utils.report_demo import demo_snapshot, SCENARIOS
-from app.utils.report_metrics import enrich_snapshot
+from app.utils.report_metrics import enrich_snapshot, METRICS
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from app.utils.auth import get_current_user
@@ -20,6 +20,19 @@ from app.utils.daily_analysis import daily_analysis
 from app.utils.report_export import render_report_html
 
 router = APIRouter()
+
+@router.get("/metric-defaults")
+def get_metric_defaults(current_user: User = Depends(get_current_user)):
+    return {"metrics": current_user.report_default_metrics}
+
+@router.put("/metric-defaults")
+def save_metric_defaults(payload: ReportMetricDefaults, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if any(key not in METRICS for key in payload.metrics):
+        raise HTTPException(status_code=422, detail="Métrica desconhecida.")
+    current_user.report_default_metrics = list(dict.fromkeys(payload.metrics))
+    db.add(current_user)
+    db.commit()
+    return {"metrics": current_user.report_default_metrics}
 
 
 def report_summary(row):
@@ -72,6 +85,11 @@ def create_report(
     title = payload.title.strip()
     if not title:
         raise HTTPException(status_code=422, detail="Informe o título do relatório.")
+    if payload.campaign_metrics is not None:
+        if not payload.campaign_metrics or any(not keys or any(k not in METRICS for k in keys) for keys in payload.campaign_metrics.values()):
+            raise HTTPException(status_code=422, detail="Selecione campanhas e métricas válidas.")
+        if payload.include_ai or payload.insight_id:
+            raise HTTPException(status_code=422, detail="A análise de IA ainda não suporta seleção personalizada de métricas.")
     analysis, model = None, None
     if payload.insight_id:
         if payload.include_ai:
@@ -86,6 +104,19 @@ def create_report(
             snapshot, analysis, model = insight.snapshot, insight.content, insight.ai_model
         else:
             snapshot = campaign_snapshot(db, client)
+    if get_settings().app_env == "development" and current_user.email == "demonstracao-dash@exemplo.com":
+        snapshot = dict(snapshot)
+        snapshot["source"] = "demo"
+        snapshot["currency_note"] = "Dados fictícios em reais (BRL); não representam uma conta conectada."
+        snapshot["campaigns"] = [dict(row, currency="BRL") for row in snapshot["campaigns"]]
+    if payload.campaign_metrics is not None:
+        valid_ids = {row["id"] for row in snapshot["campaigns"]}
+        if not set(payload.campaign_metrics).issubset(valid_ids):
+            raise HTTPException(status_code=422, detail="Uma campanha não pertence a este cliente ou não está disponível.")
+        snapshot = dict(snapshot)
+        snapshot["campaigns"] = [row for row in snapshot["campaigns"] if row["id"] in payload.campaign_metrics]
+        snapshot["metric_selection"] = {key: list(dict.fromkeys(values)) for key, values in payload.campaign_metrics.items()}
+        snapshot = enrich_snapshot(snapshot)
     report = Report(client_id=client.id, title=title, snapshot=snapshot, analysis=analysis, ai_model=model)
     db.add(report)
     db.commit()

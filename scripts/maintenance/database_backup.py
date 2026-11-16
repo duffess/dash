@@ -49,10 +49,17 @@ def snapshot_sqlite(source, destination):
     if not source.is_file():
         raise ValueError("SQLite source missing")
     # Read-only URI avoids accidentally creating an empty source database.
-    with sqlite3.connect(source.as_uri() + "?mode=ro", uri=True) as db, sqlite3.connect(destination) as backup:
-        db.backup(backup)
-        if backup.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
-            raise RuntimeError("SQLite backup integrity failed")
+    db = sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)
+    try:
+        backup = sqlite3.connect(destination)
+        try:
+            db.backup(backup)
+            if backup.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                raise RuntimeError("SQLite backup integrity failed")
+        finally:
+            backup.close()
+    finally:
+        db.close()
 
 
 def main():
