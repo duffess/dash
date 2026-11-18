@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Link2, Trash2, Users } from 'lucide-react';
+import { Search, Link2, Trash2, Users } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,10 @@ const Clients = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [overview, setOverview] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -30,10 +33,13 @@ const Clients = () => {
   }, []);
 
   const fetchClients = async () => {
+    setLoading(true); setLoadError('');
     try {
       const { data } = await api.get('/clients/');
       setClients(data);
+      try { const summary = await api.get('/clients/overview'); setOverview(Object.fromEntries(summary.data.map(row => [row.client_id, row]))); } catch { setOverview(null); }
     } catch (error) {
+      setLoadError('Não foi possível carregar os clientes.');
       toast({
         title: 'Erro ao carregar clientes',
         description: error.response?.data?.detail || 'Tente novamente em instantes.',
@@ -77,10 +83,12 @@ const Clients = () => {
         phone: form.phone.trim() || null,
         company: form.company.trim() || null,
       };
-      const { data } = await api.post('/clients/', payload);
-      setClients((prev) => [data, ...prev]);
+      const { data } = editingId ? await api.put(`/clients/${editingId}`, payload) : await api.post('/clients/', payload);
+      setClients((prev) => editingId ? prev.map(client => client.id === editingId ? data : client) : [data, ...prev]);
+      if (!editingId) setOverview(prev => prev ? {...prev, [data.id]: {client_id: data.id, campaign_count: 0, last_report_at: null}} : null);
+      setEditingId(null);
       setForm({ name: '', email: '', phone: '', company: '' });
-      toast({ title: 'Cliente criado', description: 'Cliente adicionado com sucesso.' });
+      toast({ title: editingId ? 'Cliente atualizado' : 'Cliente criado', description: 'Dados salvos com sucesso.' });
     } catch (error) {
       toast({
         title: 'Erro ao criar cliente',
@@ -93,12 +101,14 @@ const Clients = () => {
   };
 
   const handleDeleteClient = async (clientId) => {
-    const confirmed = window.confirm('Deseja remover este cliente?');
+    const client = clients.find(item => item.id === clientId);
+    const confirmed = window.confirm(`Excluir ${client?.name || 'este cliente'}? As campanhas, conexões e relatórios associados também serão excluídos. Esta ação não pode ser desfeita.`);
     if (!confirmed) return;
 
     try {
       await api.delete(`/clients/${clientId}`);
       setClients((prev) => prev.filter((client) => client.id !== clientId));
+      if (editingId === clientId) { setEditingId(null); setForm({name: '', email: '', phone: '', company: ''}); }
       toast({ title: 'Cliente removido', description: 'Cliente excluído com sucesso.' });
     } catch (error) {
       toast({
@@ -126,38 +136,35 @@ const Clients = () => {
               <h1 className="text-3xl font-bold text-slate-100">Clientes</h1>
               <p className="text-slate-300 mt-1">Cadastre clientes e acesse a página de conexão</p>
             </div>
-            <Button className="bg-[#2563EB] hover:bg-[#1E4FD1]" onClick={() => document.getElementById('client-form')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })}>
-              <Plus className="w-5 h-5 mr-2" />
-              Novo Cliente
-            </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_2fr] gap-6">
             <div className="dash-panel p-6 space-y-4" id="client-form">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-blue-300" />
-                <h2 className="text-lg font-semibold text-slate-100">Adicionar cliente</h2>
+                <h2 className="text-lg font-semibold text-slate-100">{editingId ? 'Editar cliente' : 'Adicionar cliente'}</h2>
               </div>
-              <form className="space-y-4" onSubmit={handleCreateClient}>
+              <p className="text-sm text-slate-300">Os dados de contato são opcionais e podem ser alterados depois.</p><form className="space-y-4 client-form" onSubmit={handleCreateClient}>
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome *</Label>
-                  <Input id="name" name="name" required value={form.name} onChange={handleChange} placeholder="Ex: Agência XYZ" />
+                  <Label htmlFor="name">Nome do cliente *</Label>
+                  <Input id="name" name="name" required value={form.name} onChange={handleChange} placeholder="Ex.: Café Horizonte" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="company">Empresa</Label>
-                  <Input id="company" name="company" value={form.company} onChange={handleChange} placeholder="XYZ Marketing Ltda" />
+                  <Label htmlFor="company">Empresa ou marca <span className="text-slate-400">(opcional)</span></Label>
+                  <Input id="company" name="company" value={form.company} onChange={handleChange} placeholder="Ex.: Café Horizonte" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="contato@empresa.com" />
+                  <Label htmlFor="email">E-mail <span className="text-slate-400">(opcional)</span></Label>
+                  <Input id="email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="contato@exemplo.com.br" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input id="phone" name="phone" value={form.phone} onChange={handleChange} placeholder="(21) 99999-9999" />
+                  <Label htmlFor="phone">Telefone <span className="text-slate-400">(opcional)</span></Label>
+                  <Input id="phone" name="phone" type="tel" autoComplete="tel" value={form.phone} onChange={handleChange} placeholder="(21) 99999-9999" />
                 </div>
                 <Button type="submit" className="w-full bg-[#2563EB] hover:bg-[#1E4FD1]" disabled={saving}>
-                  {saving ? 'Salvando...' : 'Adicionar cliente'}
+                  {saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Adicionar cliente'}
                 </Button>
+                {editingId && <Button type="button" variant="outline" className="w-full" onClick={() => {setEditingId(null); setForm({name: '', email: '', phone: '', company: ''});}}>Cancelar edição</Button>}
               </form>
             </div>
 
@@ -179,7 +186,7 @@ const Clients = () => {
                     <p className="text-slate-300">Carregando clientes...</p>
                   </div>
                 </div>
-              ) : (
+              ) : loadError ? <div role="alert" className="dash-panel p-5"><p>{loadError}</p><Button variant="outline" onClick={fetchClients}>Tentar novamente</Button></div> : (
                 <div className="space-y-4">
                   {filteredClients.map((client, index) => (
                     <motion.div
@@ -194,6 +201,7 @@ const Clients = () => {
                           <h3 className="text-lg font-semibold text-slate-100">{client.name}</h3>
                           <p className="text-slate-400 text-sm">{client.company || 'Empresa não informada'}</p>
                           <div className="text-sm text-slate-400 mt-2 space-y-1">
+                            <p>{overview?.[client.id] ? `${overview[client.id].campaign_count} campanha(s) · ${overview[client.id].last_report_at ? 'Último relatório: ' + new Date(/Z$|[+-]\d\d:\d\d$/.test(overview[client.id].last_report_at) ? overview[client.id].last_report_at : overview[client.id].last_report_at + 'Z').toLocaleDateString('pt-BR') : 'Nenhum relatório salvo'}` : 'Resumo indisponível; abra o cliente para consultar.'}</p>
                             {client.email && <p>{client.email}</p>}
                             {client.phone && <p>{client.phone}</p>}
                           </div>
@@ -203,6 +211,10 @@ const Clients = () => {
                             <Link2 className="w-4 h-4 mr-2" />
                             Conexão
                           </Button>
+                          <Button variant="outline" onClick={() => navigate(`/campaigns?client_id=${encodeURIComponent(client.id)}`)}>Campanhas</Button>
+                          <Button variant="outline" onClick={() => navigate(`/reports?client_id=${encodeURIComponent(client.id)}`)}>Relatórios</Button>
+                          <Button variant="outline" onClick={() => {setEditingId(null); setForm({name: `${client.name} (cópia)`, company: client.company || '', email: client.email || '', phone: client.phone || ''}); document.getElementById('client-form')?.scrollIntoView({behavior: 'smooth'});}}>Duplicar dados</Button>
+                          <Button variant="outline" onClick={() => {setEditingId(client.id); setForm({name: client.name || '', company: client.company || '', email: client.email || '', phone: client.phone || ''}); document.getElementById('client-form')?.scrollIntoView({behavior: 'smooth'});}}>Editar</Button>
                           <Button variant="ghost" onClick={() => handleDeleteClient(client.id)}>
                             <Trash2 className="w-4 h-4 mr-2 text-red-500" />
                             Excluir
@@ -214,7 +226,7 @@ const Clients = () => {
 
                   {filteredClients.length === 0 && (
                     <div className="text-center py-12 dash-panel">
-                      <p className="text-slate-400">Nenhum cliente encontrado</p>
+                      <p className="text-slate-400">{searchTerm ? 'Nenhum cliente corresponde à busca.' : 'Nenhum cliente cadastrado. Use o formulário para adicionar o primeiro.'}</p>
                     </div>
                   )}
                 </div>

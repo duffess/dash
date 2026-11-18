@@ -132,7 +132,12 @@ class CampaignFlowTests(unittest.TestCase):
 
 
 class ProviderTests(unittest.TestCase):
-    def test_google_config_omits_developer_token_and_pins_supported_api(self):
+    def test_google_config_sends_configured_developer_token(self):
+        with patch("app.utils.google_ads.GoogleAdsClient.load_from_dict") as load:
+            GoogleAdsService("client", "secret", "dev-token")._get_client("refresh")
+        self.assertEqual(load.call_args.args[0]["developer_token"], "dev-token")
+
+    def test_google_config_omits_unconfigured_developer_token_and_pins_supported_api(self):
         with patch("app.utils.google_ads.GoogleAdsClient.load_from_dict") as load:
             GoogleAdsService("client", "secret")._get_client("refresh")
         config = load.call_args.args[0]
@@ -140,7 +145,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(config["refresh_token"], "refresh")
         self.assertEqual(load.call_args.kwargs["version"], "v26")
 
-    def test_google_sdk_builds_customer_service_without_developer_token(self):
+    def test_google_sdk_builds_customer_service_when_token_is_unconfigured(self):
         from google.oauth2.credentials import Credentials
         # Avoid the SDK's initial OAuth refresh: no network or real credentials.
         with patch("google.ads.googleads.oauth2.get_credentials", return_value=Credentials("offline")):
@@ -153,7 +158,7 @@ class ProviderTests(unittest.TestCase):
     def test_google_service_needs_only_oauth_credentials(self):
         from app.routers.integration import _google_service
         with patch("app.routers.integration.get_settings", return_value=SimpleNamespace(
-            google_ads_client_id="client", google_ads_client_secret="secret"
+            google_ads_client_id="client", google_ads_client_secret="secret", google_ads_developer_token=""
         )):
             self.assertIsInstance(_google_service(), GoogleAdsService)
 

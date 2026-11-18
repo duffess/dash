@@ -1,5 +1,7 @@
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, Query
+import base64
+import binascii
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -11,7 +13,7 @@ from app.models.insight import Insight
 from app.schemas.report import ReportCreate, ReportResponse, ReportSummary, DemoReportCreate, ReportMetricDefaults
 from app.utils.report_demo import demo_snapshot, SCENARIOS
 from app.utils.report_metrics import enrich_snapshot, METRICS
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
 from types import SimpleNamespace
 from app.utils.auth import get_current_user
 from app.utils.analysis_data import owned_client, campaign_snapshot
@@ -60,6 +62,8 @@ def owned_report(db, user_id, report_id):
 def list_reports(
     client_id: Optional[str] = None, offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    created_from: Optional[date] = None, created_to: Optional[date] = None,
+    search: Optional[str] = Query(None, max_length=200),
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
 ):
     if client_id:
@@ -67,6 +71,15 @@ def list_reports(
     query = db.query(Report).join(Client).filter(Client.user_id == current_user.id)
     if client_id:
         query = query.filter(Report.client_id == client_id)
+    if search and search.strip():
+        term = search.strip().replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        query = query.filter(Report.title.ilike(f'%{term}%', escape='\\'))
+    if created_from and created_to and created_from > created_to:
+        raise HTTPException(status_code=422, detail="A data inicial deve ser anterior à data final.")
+    if created_from:
+        query = query.filter(Report.created_at >= datetime.combine(created_from, time.min))
+    if created_to:
+        query = query.filter(Report.created_at <= datetime.combine(created_to, time.max))
     rows = query.order_by(Report.created_at.desc(), Report.id).offset(offset).limit(limit).all()
     return [report_summary(row) for row in rows]
 
@@ -79,7 +92,7 @@ def preview_report(client_id: str, db: Session = Depends(get_db), current_user: 
 @router.post("/", response_model=ReportResponse, status_code=201)
 def create_report(
     payload: ReportCreate, db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user), preview_only: bool = False,
 ):
     client = owned_client(db, current_user.id, payload.client_id)
     title = payload.title.strip()
@@ -117,6 +130,32 @@ def create_report(
         snapshot["campaigns"] = [row for row in snapshot["campaigns"] if row["id"] in payload.campaign_metrics]
         snapshot["metric_selection"] = {key: list(dict.fromkeys(values)) for key, values in payload.campaign_metrics.items()}
         snapshot = enrich_snapshot(snapshot)
+    snapshot = dict(snapshot)
+    if (payload.agency_analysis or '').strip():
+        snapshot['agency_analysis'] = payload.agency_analysis.strip()
+    if (payload.next_steps or '').strip():
+        snapshot['next_steps'] = payload.next_steps.strip()
+    if (payload.agency_name or '').strip():
+        snapshot['agency_name'] = payload.agency_name.strip()
+    for logo_key in ('agency_logo', 'client_logo'):
+        logo = getattr(payload, logo_key)
+        if not logo:
+            continue
+        try:
+            prefix, encoded = logo.split(',', 1)
+            if prefix not in ('data:image/png;base64', 'data:image/jpeg;base64'):
+                raise ValueError('format')
+            raw = base64.b64decode(encoded, validate=True)
+            if len(raw) > 128 * 1024 or not ((prefix == 'data:image/png;base64' and raw.startswith(b'\x89PNG\r\n\x1a\n')) or (prefix == 'data:image/jpeg;base64' and raw.startswith(b'\xff\xd8\xff'))):
+                raise ValueError('image')
+        except (ValueError, binascii.Error):
+            raise HTTPException(status_code=422, detail='Use uma logo PNG ou JPEG de até 128 KB.')
+        snapshot[logo_key] = logo
+    if payload.accent_color:
+        snapshot['accent_color'] = payload.accent_color
+    if preview_only:
+        report = SimpleNamespace(id="preview", client_id=client.id, title=title, snapshot=snapshot, analysis=analysis, ai_model=model, created_at=datetime.now(timezone.utc))
+        return report_response(report)
     report = Report(client_id=client.id, title=title, snapshot=snapshot, analysis=analysis, ai_model=model)
     db.add(report)
     db.commit()
@@ -129,9 +168,32 @@ def demonstration_report(payload: DemoReportCreate, current_user: User = Depends
     if payload.include_ai and not get_settings().demo_ai_enabled:
         raise HTTPException(status_code=403, detail="IA paga desativada no laboratório. Gere a demonstração sem IA.")
     snapshot = demo_snapshot(payload.scenario)
+    if not payload.title.strip() or not payload.client_name.strip():
+        raise HTTPException(status_code=422, detail="Informe título e nome do cliente fictício.")
+    snapshot["client_name"] = payload.client_name.strip() + " [FICTÍCIO]"
+    if payload.campaign_metrics is not None:
+        valid_ids = {row["id"] for row in snapshot["campaigns"]}
+        if not payload.campaign_metrics or not set(payload.campaign_metrics).issubset(valid_ids) or any(not values or any(key not in METRICS for key in values) for values in payload.campaign_metrics.values()):
+            raise HTTPException(status_code=422, detail="Selecione campanhas e métricas válidas.")
+        snapshot["campaigns"] = [row for row in snapshot["campaigns"] if row["id"] in payload.campaign_metrics]
+        snapshot["metric_selection"] = payload.campaign_metrics
+        snapshot = enrich_snapshot(snapshot)
+    for key in ("agency_name", "agency_analysis", "next_steps", "accent_color"):
+        value = getattr(payload, key)
+        if value and value.strip(): snapshot[key] = value.strip()
+    for key in ("agency_logo", "client_logo"):
+        logo = getattr(payload, key)
+        if not logo: continue
+        try:
+            prefix, encoded = logo.split(',', 1)
+            raw = base64.b64decode(encoded, validate=True)
+            if len(raw) > 128 * 1024 or not ((prefix == 'data:image/png;base64' and raw.startswith(b'\x89PNG\r\n\x1a\n')) or (prefix == 'data:image/jpeg;base64' and raw.startswith(b'\xff\xd8\xff'))): raise ValueError('image')
+        except (ValueError, binascii.Error):
+            raise HTTPException(status_code=422, detail='Use uma logo PNG ou JPEG de até 128 KB.')
+        snapshot[key] = logo
     analysis, model = generate_analysis(snapshot) if payload.include_ai else (None, None)
     row = SimpleNamespace(id="demo-" + payload.scenario, client_id="demo", snapshot=snapshot,
-                          title="Demonstração / " + SCENARIOS[payload.scenario],
+                          title="Demonstração / " + payload.title.strip(),
                           created_at=datetime.now(timezone.utc), analysis=analysis, ai_model=model)
     return report_response(row)
 
@@ -147,5 +209,13 @@ def export_report(report_id: str, db: Session = Depends(get_db), current_user: U
     return HTMLResponse(render_report_html(row), headers={
         "Content-Disposition": f'attachment; filename="dashflow-report-{row.id}.html"',
         "Cache-Control": "no-store",
-        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'",
+        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:",
     })
+
+
+@router.delete("/{report_id}", status_code=204)
+def delete_report(report_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    row = owned_report(db, current_user.id, report_id)
+    db.delete(row)
+    db.commit()
+    return Response(status_code=204)

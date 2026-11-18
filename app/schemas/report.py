@@ -9,6 +9,12 @@ class ReportCreate(BaseModel):
     include_ai: bool = False
     insight_id: Optional[str] = None
     campaign_metrics: Optional[dict[str, list[str]]] = None
+    agency_analysis: Optional[str] = Field(default=None, max_length=3000)
+    next_steps: Optional[str] = Field(default=None, max_length=3000)
+    agency_name: Optional[str] = Field(default=None, max_length=120)
+    agency_logo: Optional[str] = Field(default=None, max_length=180000)
+    client_logo: Optional[str] = Field(default=None, max_length=180000)
+    accent_color: Optional[str] = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
 
 
 class ReportMetricDefaults(BaseModel):
@@ -37,3 +43,12 @@ class DemoReportCreate(BaseModel):
     model_config = {"extra": "forbid"}
     scenario: Literal["leads", "sales", "limited", "zero"] = "leads"
     include_ai: bool = False
+    title: str = Field(default="Relatório demonstrativo", min_length=1, max_length=200)
+    client_name: str = Field(default="Estúdio Horizonte (fictício)", min_length=1, max_length=120)
+    campaign_metrics: Optional[dict[str, list[str]]] = None
+    agency_name: Optional[str] = Field(default=None, max_length=120)
+    agency_analysis: Optional[str] = Field(default=None, max_length=3000)
+    next_steps: Optional[str] = Field(default=None, max_length=3000)
+    agency_logo: Optional[str] = Field(default=None, max_length=180000)
+    client_logo: Optional[str] = Field(default=None, max_length=180000)
+    accent_color: Optional[str] = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")

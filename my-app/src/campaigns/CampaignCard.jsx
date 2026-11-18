@@ -36,6 +36,6 @@ export default function CampaignCard({ campaign }) {
       <span className="campaign-sync"><Clock3 size={14} aria-hidden="true" />{demo ? 'Exemplo local' : sync ? `Sincronizada em ${sync}` : 'Sincronização indisponível'}</span>
     </div>
     <div className="campaign-metrics campaign-metrics-expanded">{metrics.map(([label, value]) => <div key={label} className="campaign-metric-tile"><span>{label}</span><strong>{value}</strong></div>)}</div>
-    <p className="campaign-metric-note"><Info size={14} aria-hidden="true" />{metaResults ? 'Na Meta, este total reúne leads e compras disponíveis; não equivale necessariamente às conversões do Google.' : 'Métricas do último período sincronizado. — indica dado indisponível ou cálculo sem base.'}</p>
+    <p className="campaign-metric-note"><Info size={14} aria-hidden="true" />{metaResults ? 'Na Meta, este total reúne leads e compras disponíveis; não equivale necessariamente às conversões do Google. ' : ''}— indica métrica não recebida ou cálculo sem base (como zero cliques). Confira a última sincronização e tente sincronizar novamente na página do cliente.</p>
   </motion.article>;
 }

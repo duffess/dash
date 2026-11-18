@@ -35,7 +35,7 @@ def _ensure_client_owner(db: Session, client_id: str, user_id: str) -> Client:
     if not client:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente nao encontrado",
+            detail="Cliente não encontrado",
         )
     return client
 
@@ -66,7 +66,8 @@ def _google_service():
     settings = get_settings()
     if not all((settings.google_ads_client_id, settings.google_ads_client_secret)):
         raise HTTPException(status_code=400, detail="Configure as credenciais do Google Ads antes de sincronizar.")
-    return GoogleAdsService(settings.google_ads_client_id, settings.google_ads_client_secret)
+    return GoogleAdsService(settings.google_ads_client_id, settings.google_ads_client_secret,
+                            settings.google_ads_developer_token)
 
 
 def _token(integration, meta=False):
@@ -110,7 +111,7 @@ def create_integration(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Integracao para esta plataforma ja existe neste cliente",
+            detail="Integração para esta plataforma já existe neste cliente",
         )
 
     integration = ClientIntegration(
@@ -157,7 +158,7 @@ def get_integration(
     if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Integracao nao encontrada",
+            detail="Integração não encontrada",
         )
     return _to_response(row)
 
@@ -176,7 +177,7 @@ def get_integration_accounts(
     if not integration:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Integracao nao encontrada",
+            detail="Integração não encontrada",
         )
         
     return AccountListResponse(accounts=_accounts(integration))
@@ -198,7 +199,7 @@ def update_integration(
     if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Integracao nao encontrada",
+            detail="Integração não encontrada",
         )
 
     data = payload.model_dump(exclude_unset=True)
@@ -244,7 +245,7 @@ def delete_integration(
     if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Integracao nao encontrada",
+            detail="Integração não encontrada",
         )
 
     db.delete(row)
@@ -267,7 +268,7 @@ def sync_integration_campaigns(
     if not integration:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Integracao nao encontrada",
+            detail="Integração não encontrada",
         )
     if integration.status not in {"connected", "error"}:
         raise HTTPException(status_code=400, detail="Conecte a integração e selecione a conta antes de sincronizar.")

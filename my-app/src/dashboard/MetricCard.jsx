@@ -18,6 +18,7 @@ export default function MetricCard({ title, value, icon: Icon, current, previous
   return <div className="metric-card dash-inset"><p className="metric-label"><Icon size={15} aria-hidden="true" />{title}</p><p className="metric-value">{value}</p>
     {result ? <p className={`metric-comparison metric-comparison--${result.tone}`} title={description} aria-label={`${result.direction === 'flat' ? 'Sem alteração' : `${result.direction === 'up' ? 'Aumento' : 'Redução'} de ${result.label}`} em relação ao período anterior. ${description}`}>
       <Direction size={14} aria-hidden="true" /><strong>{result.label}</strong><span>vs. período anterior</span>
-    </p> : <p className="metric-comparison metric-comparison--unavailable">{loading ? 'Carregando comparação…' : 'Sem dados para comparação'}</p>}
+    </p> : <p className="metric-comparison metric-comparison--unavailable">{loading ? 'Carregando comparação…' : previous === 0 && current > 0 ? 'Período anterior zero: variação percentual indisponível' : 'Sem dados para comparação'}</p>}
+    {result && <p className="text-xs text-slate-400 mt-1">Anterior: {formatValue(previous)} · Atual: {formatValue(current)}</p>}
   </div>;
 }

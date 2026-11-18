@@ -35,7 +35,7 @@ def login(email, password):
     except Exception as e:
         return False, f"Erro ao conectar: {str(e)}"
 
-# Função de registro
+# funcao de registro
 def register(email, name, password):
     try:
         response = requests.post(
@@ -50,7 +50,7 @@ def register(email, name, password):
     except Exception as e:
         return False, f"Erro ao conectar: {str(e)}"
 
-# Função para pegar dados do usuário
+# funcao para pegar dados do usuario
 def get_user_data(token):
     try:
         response = requests.get(

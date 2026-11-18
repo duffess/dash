@@ -18,6 +18,8 @@ const ClientConnection = () => {
   const [googleIntegration, setGoogleIntegration] = useState(null);
   const [metaIntegration, setMetaIntegration] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
+  const [recentReports, setRecentReports] = useState([]);
+  const [reportsState, setReportsState] = useState('loading');
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
@@ -92,6 +94,15 @@ const ClientConnection = () => {
   };
 
   useEffect(() => {
+    let active = true;
+    setReportsState('loading');
+    api.get('/reports/', {params: {client_id: clientId, limit: 3}}).then(({data}) => {
+      if (active) {setRecentReports(data); setReportsState('ready');}
+    }).catch(() => {if (active) setReportsState('error');});
+    return () => {active = false;};
+  }, [clientId]);
+
+  useEffect(() => {
     const boot = async () => {
       try {
         await Promise.all([fetchClient(), fetchIntegrations(), fetchCampaigns()]);
@@ -114,12 +125,12 @@ const ClientConnection = () => {
     if (!clientId) return;
     try {
       const { data } = await api.get('/auth/google/connect', { params: { client_id: clientId } });
-      if (!data?.auth_url) throw new Error('URL de autenticacao nao recebida');
+      if (!data?.auth_url) throw new Error('URL de autenticação não recebida');
       window.location.href = data.auth_url;
     } catch (error) {
       toast({
-        title: 'Erro ao iniciar conexao',
-        description: error.response?.data?.detail || error.message || 'Nao foi possivel iniciar OAuth do Google.',
+        title: 'Erro ao iniciar conexão',
+        description: error.response?.data?.detail || error.message || 'Não foi possível iniciar OAuth do Google.',
         variant: 'destructive',
       });
     }
@@ -138,7 +149,7 @@ const ClientConnection = () => {
     } catch (error) {
       toast({
         title: 'Erro ao sincronizar',
-        description: error.response?.data?.detail || 'Falha durante sincronizacao.',
+        description: error.response?.data?.detail || 'Falha durante sincronização.',
         variant: 'destructive',
       });
     } finally {
@@ -151,11 +162,11 @@ const ClientConnection = () => {
     if (!clientId) return;
     try {
       const { data } = await api.get('/auth/meta/connect', { params: { client_id: clientId } });
-      if (!data?.auth_url) throw new Error('URL de autenticacao nao recebida');
+      if (!data?.auth_url) throw new Error('URL de autenticação não recebida');
       window.location.href = data.auth_url;
     } catch (error) {
       toast({
-        title: 'Erro ao iniciar conexao Meta',
+        title: 'Erro ao iniciar conexão Meta',
         description: error.response?.data?.detail || error.message || 'Falha no OAuth do Meta.',
         variant: 'destructive',
       });
@@ -175,7 +186,7 @@ const ClientConnection = () => {
     } catch (error) {
       toast({
         title: 'Erro ao sincronizar',
-        description: error.response?.data?.detail || 'Falha durante sincronizacao Meta.',
+        description: error.response?.data?.detail || 'Falha durante sincronização Meta.',
         variant: 'destructive',
       });
     } finally {
@@ -227,7 +238,7 @@ const ClientConnection = () => {
               </Button>
               <h1 className="text-3xl font-bold text-slate-100">{client.name}</h1>
               <p className="text-slate-300 mt-1">
-                {client.company || 'Empresa nao informada'} {client.email ? `- ${client.email}` : ''}
+                {client.company || 'Empresa não informada'} {client.email ? `- ${client.email}` : ''}
               </p>
             </div>
           </div>
@@ -371,6 +382,10 @@ const ClientConnection = () => {
               )}
             </div>
           </div>
+          <section className="dash-panel p-6 space-y-4" aria-label="Relatórios recentes">
+            <div className="flex flex-wrap justify-between items-center gap-3"><div><h2 className="text-lg font-semibold text-slate-100">Relatórios recentes</h2><p className="text-sm text-slate-400">Os últimos relatórios salvos para este cliente.</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => navigate(`/campaigns?client_id=${encodeURIComponent(clientId)}`)}>Ver campanhas</Button><Button variant="outline" onClick={() => navigate(`/reports?client_id=${encodeURIComponent(clientId)}`)}>Ver relatórios</Button></div></div>
+            {reportsState === 'loading' ? <p role="status">Carregando relatórios...</p> : reportsState === 'error' ? <p role="alert">Não foi possível carregar os relatórios.</p> : recentReports.length === 0 ? <p className="text-slate-400">Nenhum relatório salvo para este cliente.</p> : recentReports.map(report => <button key={report.id} type="button" className="block w-full text-left border border-border rounded-lg p-3 hover:bg-slate-800" onClick={() => navigate(`/reports?client_id=${encodeURIComponent(clientId)}&report_id=${encodeURIComponent(report.id)}`)}><span className="font-medium text-slate-100">{report.title}</span><span className="block text-sm text-slate-400">{report.campaign_count} campanha(s) · {new Date(/Z$|[+-]\d\d:\d\d$/.test(report.created_at) ? report.created_at : report.created_at + 'Z').toLocaleDateString('pt-BR')}</span></button>)}
+          </section>
         </div>
       </Layout>
 

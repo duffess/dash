@@ -29,7 +29,7 @@ def connect_meta(
     settings = get_settings()
     
     if not settings.meta_app_id or not settings.meta_app_secret:
-        raise HTTPException(status_code=400, detail="Meta App credentials nao configuradas")
+        raise HTTPException(status_code=400, detail="Credenciais do app da Meta não configuradas no backend")
 
     client = (
         db.query(Client)
@@ -37,7 +37,7 @@ def connect_meta(
         .first()
     )
     if not client:
-        raise HTTPException(status_code=404, detail="Cliente nao encontrado")
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
 
     service = MetaAdsService(
         app_id=settings.meta_app_id,
@@ -75,7 +75,7 @@ def meta_auth_callback(
         .first()
     )
     if not client:
-        raise HTTPException(status_code=404, detail="Cliente nao encontrado")
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
 
     integration = db.query(ClientIntegration).filter(
         ClientIntegration.client_id == client_id,

@@ -32,6 +32,12 @@
   option { background: #17253d; color: #f8fafc; }
   input:not([type=checkbox]):not([type=radio]),textarea { background: #121f35; }
   input::placeholder,textarea::placeholder { color: #a5b4c9; }
+  input[type=file] { display: block; width: 100%; margin-top: 8px; padding: 6px; border: 1px dashed rgba(147,197,253,.35); border-radius: 14px; color: #a5b4c9; font-size: 13px; cursor: pointer; transition: border-color .2s; }
+  input[type=file]:hover { border-color: rgba(147,197,253,.7); }
+  input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 16px; border: 0; border-radius: 999px; background: rgba(37,99,235,.22); color: #dbeafe; font: 500 13px 'Poppins', sans-serif; cursor: pointer; transition: background .2s; }
+  input[type=file]::file-selector-button:hover { background: rgba(37,99,235,.45); }
+  input[type=color] { width: 44px; height: 32px; padding: 2px; border: 1px solid rgba(147,197,253,.35); border-radius: 10px; vertical-align: middle; cursor: pointer; }
+  input[type=color]::-webkit-color-swatch-wrapper { padding: 0; } input[type=color]::-webkit-color-swatch { border: 0; border-radius: 7px; }
   p,td { overflow-wrap: anywhere; } th { font-weight: 500; color: #cbd5e1; }
   td,th { font-variant-numeric: tabular-nums; } ::selection { background: #2563eb; color: white; }
 }
@@ -201,3 +207,17 @@
 @media (max-width: 360px) { .metric-grid { grid-template-columns: 1fr; } }
 
 .overview-heading > .dash-chip { flex-shrink: 0; white-space: nowrap; }
+
+/* Cadastro de clientes: contraste e foco consistentes com o painel. */
+.client-form label { color: #e2eaf8; font-weight: 500; }
+.client-form input { min-height: 46px; background: #0d1b32; border: 1px solid #52627c; color: #f4f7ff; }
+.client-form input::placeholder { color: #a9b8ce; opacity: 1; }
+.client-form input:focus-visible { outline: 2px solid #8db4ff; outline-offset: 2px; }
+
+@media (max-width: 767px) {
+  #report-form, #client-form { min-width: 0; }
+  #report-form input:not([type=checkbox]):not([type=color]), #report-form select, #report-form textarea { max-width: 100%; min-height: 44px; font-size: 16px; }
+  #report-form button, #client-form button { min-height: 44px; }
+  .report-metric-options { gap: 8px; }
+  .report-metric-options label { min-height: 40px; }
+}

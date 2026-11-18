@@ -6,15 +6,17 @@ import CampaignCard from '@/campaigns/CampaignCard';
 import { Button } from '@/components/ui/button';
 import { Plus, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useSearchParams } from 'react-router-dom';
 import api from '@/lib/api';
 
 const Campaigns = () => {
+  const [params] = useSearchParams();
   const [campaigns, setCampaigns] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
   const [clients, setClients] = useState([]);
-  const [selectedClient, setSelectedClient] = useState('');
+  const [selectedClient, setSelectedClient] = useState(params.get('client_id') || '');
   const [selectedPlatform, setSelectedPlatform] = useState('');
   const [error, setError] = useState('');
   const [clientsError, setClientsError] = useState('');

@@ -132,23 +132,23 @@ class SecurityContracts(unittest.TestCase):
     def test_disabled_paid_demo_rejects_before_snapshot_or_provider(self):
         target, ai, snapshot = self.demo(False)
         with self.assertRaises(HTTPError) as error:
-            target.demonstration_report(SimpleNamespace(include_ai=True, scenario="leads"), SimpleNamespace(id="dummy-user"))
+            target.demonstration_report(SimpleNamespace(include_ai=True, scenario="leads", title="Teste", client_name="Cliente", campaign_metrics=None, agency_name=None, agency_analysis=None, next_steps=None, accent_color=None, agency_logo=None, client_logo=None), SimpleNamespace(id="dummy-user"))
         self.assertEqual(error.exception.status_code, 403)
         ai.assert_not_called()
         snapshot.assert_not_called()
 
     def test_static_demo_is_available_without_paid_ai(self):
         target, ai, _ = self.demo(False)
-        row = target.demonstration_report(SimpleNamespace(include_ai=False, scenario="leads"), SimpleNamespace(id="dummy-user"))
+        row = target.demonstration_report(SimpleNamespace(include_ai=False, scenario="leads", title="Teste", client_name="Cliente", campaign_metrics=None, agency_name=None, agency_analysis=None, next_steps=None, accent_color=None, agency_logo=None, client_logo=None), SimpleNamespace(id="dummy-user"))
         self.assertEqual(row.snapshot["source"], "demo")
         self.assertIsNone(row.analysis)
         ai.assert_not_called()
 
     def test_explicit_operator_opt_in_preserves_demo_feature(self):
         target, ai, _ = self.demo(True)
-        row = target.demonstration_report(SimpleNamespace(include_ai=True, scenario="leads"), SimpleNamespace(id="dummy-user"))
+        row = target.demonstration_report(SimpleNamespace(include_ai=True, scenario="leads", title="Teste", client_name="Cliente", campaign_metrics=None, agency_name=None, agency_analysis=None, next_steps=None, accent_color=None, agency_logo=None, client_logo=None), SimpleNamespace(id="dummy-user"))
         self.assertEqual(row.analysis, "dummy-analysis")
-        ai.assert_called_once_with({"source": "demo"})
+        ai.assert_called_once_with({"source": "demo", "client_name": "Cliente [FICTÍCIO]"})
 
     def test_demo_status_requires_key_and_operator_flag(self):
         for key, enabled, expected in (("", True, False), ("dummy-key", False, False), ("dummy-key", True, True)):

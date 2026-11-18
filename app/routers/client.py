@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
 from app.database import get_db
 from app.models.user import User
 from app.models.client import Client
+from app.models.campaign import Campaign
+from app.models.report import Report
 from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse
 from app.utils.auth import get_current_user
 
@@ -40,6 +43,13 @@ def list_clients(
     
     clients = db.query(Client).filter(Client.user_id == current_user.id).all()
     return clients
+
+@router.get('/overview')
+def client_overview(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    clients = db.query(Client.id).filter(Client.user_id == current_user.id).all()
+    campaign_counts = dict(db.query(Campaign.client_id, func.count(Campaign.id)).join(Client, Campaign.client_id == Client.id).filter(Client.user_id == current_user.id).group_by(Campaign.client_id).all())
+    latest_reports = dict(db.query(Report.client_id, func.max(Report.created_at)).join(Client, Report.client_id == Client.id).filter(Client.user_id == current_user.id).group_by(Report.client_id).all())
+    return [{'client_id': row.id, 'campaign_count': campaign_counts.get(row.id, 0), 'last_report_at': latest_reports.get(row.id)} for row in clients]
 
 @router.get("/{client_id}", response_model=ClientResponse)
 def get_client(
