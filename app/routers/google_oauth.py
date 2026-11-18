@@ -34,7 +34,6 @@ def _fetch_google_account_id(refresh_token: str) -> str | None:
     service = GoogleAdsService(
         client_id=settings.google_ads_client_id,
         client_secret=settings.google_ads_client_secret,
-        developer_token=settings.google_ads_developer_token,
     )
     
     account_ids = service.list_accessible_customers(refresh_token)

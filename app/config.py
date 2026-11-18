@@ -39,7 +39,6 @@ class Settings(BaseSettings):
 
     google_ads_client_id: str = ""
     google_ads_client_secret: str = ""
-    google_ads_developer_token: str = ""
     google_ads_redirect_uri: str = "http://localhost:8000/auth/google/callback"
     frontend_base_url: str = "http://localhost:3000"
 

@@ -66,8 +66,7 @@ def _google_service():
     settings = get_settings()
     if not all((settings.google_ads_client_id, settings.google_ads_client_secret)):
         raise HTTPException(status_code=400, detail="Configure as credenciais do Google Ads antes de sincronizar.")
-    return GoogleAdsService(settings.google_ads_client_id, settings.google_ads_client_secret,
-                            settings.google_ads_developer_token)
+    return GoogleAdsService(settings.google_ads_client_id, settings.google_ads_client_secret)
 
 
 def _token(integration, meta=False):

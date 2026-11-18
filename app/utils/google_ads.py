@@ -7,10 +7,9 @@ logger = logging.getLogger(__name__)
 class GoogleAdsService:
     API_VERSION = "v26"
 
-    def __init__(self, client_id: str, client_secret: str, developer_token: str = ""):
+    def __init__(self, client_id: str, client_secret: str):
         self.client_id = client_id
         self.client_secret = client_secret
-        self.developer_token = developer_token
 
     def _get_client(self, refresh_token: str, customer_id: Optional[str] = None) -> GoogleAdsClient:
         """Instancia o cliente oficial do Google Ads."""
@@ -20,9 +19,8 @@ class GoogleAdsService:
             "refresh_token": refresh_token,
             "use_proto_plus": True
         }
-        if self.developer_token:
-            # A API do Google Ads recusa chamadas sem o developer token.
-            config["developer_token"] = self.developer_token
+        # Desde 10/09/2026 o acesso à API segue o projeto do Google Cloud; o developer token é
+        # ignorado pelos servidores e será recusado numa versão futura. Não envie.
         if customer_id:
             # Se for MCC, o login-customer-id deve ser o ID da MCC
             # Mas para simplificar no MVP, usamos o próprio customer_id se ele for o alvo
